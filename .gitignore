@@ -9,6 +9,7 @@
 # ⚙️ Build output
 # ================================
 /.next/               # Next.js build output
+.next/cache/          # Next.js build cache
 /out/                 # Static export output
 /build/               # Custom build folder (if used)
 /coverage/            # Test coverage reports
