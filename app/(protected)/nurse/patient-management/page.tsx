@@ -1,0 +1,3 @@
+// app/(protected)/nurse/patient-management/page.tsx
+// This is a placeholder file for the Patient Management page under the nurse role.
+// You can implement the actual page content as needed. This page is responsible for managing patient information and related functionalities. For example, it could include features like viewing patient lists, adding new patients, updating patient details, and managing appointments. (Looks like I aready have this functionality in patients module)

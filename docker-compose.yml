@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+  hospital-db:
+    image: postgres:15
+    container_name: hospital-db
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"
+    volumes:
+      - hospital-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .              # ← now points to root
+    container_name: hospital-web
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - hospital-db
+    volumes:
+      - .:/app            # ← mount entire root for live editing
+    restart: unless-stopped
+
+volumes:
+  hospital-data:
