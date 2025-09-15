@@ -20,7 +20,8 @@ const AuditLogWithUserSchema = AuditLogSchema.extend({
 
 type AuditLogWithUser = z.infer<typeof AuditLogWithUserSchema>;
 
-interface Props {
+// Props type for App Router page
+interface AuditLogsPageProps {
   searchParams?: {
     p?: string;
     user?: string;
@@ -30,25 +31,27 @@ interface Props {
   };
 }
 
-export default async function AuditLogsPage({ searchParams }: Props) {
-  const page = searchParams?.p ? parseInt(searchParams.p) : 1;
+export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps) {
+  const params = searchParams ?? {};
+
+  const page = params.p ? parseInt(params.p) : 1;
   const limit = 10;
   const offset = (page - 1) * limit;
 
-  // Build Prisma where clause
+  // Prisma where clause
   const where: Prisma.AuditLogWhereInput = {};
-  if (searchParams?.action) where.action = searchParams.action;
-  if (searchParams?.status) where.details = searchParams.status;
-  if (searchParams?.user) {
-    where.user = { name: { contains: searchParams.user, mode: "insensitive" } };
+  if (params.action) where.action = params.action;
+  if (params.status) where.details = params.status;
+  if (params.user) {
+    where.user = { name: { contains: params.user, mode: "insensitive" } };
   }
 
-  // Prisma-safe order
+  // Prisma order
   const orderBy: Prisma.AuditLogOrderByWithRelationInput = {
-    created_at: searchParams?.sort === "oldest" ? "asc" : "desc",
+    created_at: params.sort === "oldest" ? "asc" : "desc",
   };
 
-  // Fetch total logs and paginated logs
+  // Fetch data
   const [totalLogs, rawLogs] = await Promise.all([
     db.auditLog.count({ where }),
     db.auditLog.findMany({
@@ -57,21 +60,19 @@ export default async function AuditLogsPage({ searchParams }: Props) {
       where,
       orderBy,
       include: {
-        user: {
-          select: { id: true, name: true, email: true },
-        },
+        user: { select: { id: true, name: true, email: true } },
       },
     }),
   ]);
 
-  // Validate and parse logs (with user relation)
+  // Validate
   const auditLogs: AuditLogWithUser[] = rawLogs.map((log) =>
     AuditLogWithUserSchema.parse(log)
   );
 
   const totalPages = Math.ceil(totalLogs / limit);
 
-  // Deduplicate statuses for filter dropdown
+  // Status filter options
   const statuses = Array.from(
     new Set([
       ...Object.values(AppointmentStatus),
@@ -90,19 +91,19 @@ export default async function AuditLogsPage({ searchParams }: Props) {
           name="user"
           type="text"
           placeholder="Filter by User Name"
-          defaultValue={searchParams?.user ?? ""}
+          defaultValue={params.user ?? ""}
           className="border rounded px-2 py-1"
         />
         <input
           name="action"
           type="text"
           placeholder="Filter by Action"
-          defaultValue={searchParams?.action ?? ""}
+          defaultValue={params.action ?? ""}
           className="border rounded px-2 py-1"
         />
         <select
           name="status"
-          defaultValue={searchParams?.status ?? ""}
+          defaultValue={params.status ?? ""}
           className="border rounded px-2 py-1"
         >
           <option value="">All Statuses</option>
@@ -114,7 +115,7 @@ export default async function AuditLogsPage({ searchParams }: Props) {
         </select>
         <select
           name="sort"
-          defaultValue={searchParams?.sort ?? "newest"}
+          defaultValue={params.sort ?? "newest"}
           className="border rounded px-2 py-1"
         >
           <option value="newest">Newest First</option>
@@ -147,9 +148,7 @@ export default async function AuditLogsPage({ searchParams }: Props) {
                     {log.created_at ? format(new Date(log.created_at), "PPpp") : "-"}
                   </td>
                   <td className="px-4 py-2">
-                    {log.user
-                      ? `${log.user.name} (${log.user.email})`
-                      : "System"}
+                    {log.user ? `${log.user.name} (${log.user.email})` : "System"}
                   </td>
                   <td className="px-4 py-2 font-medium">{log.action}</td>
                   <td className="px-4 py-2">{log.model}</td>
