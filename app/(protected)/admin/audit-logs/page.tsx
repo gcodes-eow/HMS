@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { AppointmentStatus, PaymentStatus, LabTestStatus, Prisma } from "@prisma/client";
 import { Pagination } from "@/components/Pagination";
 import { z } from "zod";
-import { AuditLogSchema } from "@/lib/schema";
+import { AuditLogSchema } from "@/utils/auditLogs"; // <-- fixed import path
 
 // Extend schema to include user relation
 const AuditLogWithUserSchema = AuditLogSchema.extend({
@@ -20,38 +20,29 @@ const AuditLogWithUserSchema = AuditLogSchema.extend({
 
 type AuditLogWithUser = z.infer<typeof AuditLogWithUserSchema>;
 
-// Props type for App Router page
-interface AuditLogsPageProps {
-  searchParams?: {
-    p?: string;
-    user?: string;
-    action?: string;
-    status?: string;
-    sort?: "newest" | "oldest";
-  };
-}
-
-export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps) {
+export default async function AuditLogsPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const params = searchParams ?? {};
 
-  const page = params.p ? parseInt(params.p) : 1;
+  const page = params.p ? parseInt(params.p as string, 10) : 1;
   const limit = 10;
   const offset = (page - 1) * limit;
 
-  // Prisma where clause
+  // Build Prisma where clause
   const where: Prisma.AuditLogWhereInput = {};
-  if (params.action) where.action = params.action;
-  if (params.status) where.details = params.status;
+  if (params.action) where.action = params.action as string;
+  if (params.status) where.details = params.status as string;
   if (params.user) {
-    where.user = { name: { contains: params.user, mode: "insensitive" } };
+    where.user = { name: { contains: params.user as string, mode: "insensitive" } };
   }
 
-  // Prisma order
   const orderBy: Prisma.AuditLogOrderByWithRelationInput = {
     created_at: params.sort === "oldest" ? "asc" : "desc",
   };
 
-  // Fetch data
   const [totalLogs, rawLogs] = await Promise.all([
     db.auditLog.count({ where }),
     db.auditLog.findMany({
@@ -65,14 +56,12 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
     }),
   ]);
 
-  // Validate
   const auditLogs: AuditLogWithUser[] = rawLogs.map((log) =>
     AuditLogWithUserSchema.parse(log)
   );
 
   const totalPages = Math.ceil(totalLogs / limit);
 
-  // Status filter options
   const statuses = Array.from(
     new Set([
       ...Object.values(AppointmentStatus),
@@ -91,19 +80,19 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
           name="user"
           type="text"
           placeholder="Filter by User Name"
-          defaultValue={params.user ?? ""}
+          defaultValue={(params.user as string) ?? ""}
           className="border rounded px-2 py-1"
         />
         <input
           name="action"
           type="text"
           placeholder="Filter by Action"
-          defaultValue={params.action ?? ""}
+          defaultValue={(params.action as string) ?? ""}
           className="border rounded px-2 py-1"
         />
         <select
           name="status"
-          defaultValue={params.status ?? ""}
+          defaultValue={(params.status as string) ?? ""}
           className="border rounded px-2 py-1"
         >
           <option value="">All Statuses</option>
@@ -115,7 +104,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
         </select>
         <select
           name="sort"
-          defaultValue={params.sort ?? "newest"}
+          defaultValue={(params.sort as string) ?? "newest"}
           className="border rounded px-2 py-1"
         >
           <option value="newest">Newest First</option>
@@ -138,7 +127,9 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                 <th className="px-4 py-2 text-left font-medium text-gray-700">User</th>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">Action</th>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">Entity</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">Details / Status</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                  Details / Status
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
