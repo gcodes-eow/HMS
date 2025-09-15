@@ -1,3 +1,4 @@
+// types/dataTypes.ts
 // ==========================
 // Import Prisma Enums
 // ==========================
@@ -13,8 +14,21 @@ import {
   LabTestStatus,
 } from "@prisma/client";
 
+// Re-export enums
+export {
+  AppointmentStatus,
+  Status,
+  Gender,
+  Role,
+  JOBTYPE,
+  PaymentMethod,
+  PaymentStatus,
+  InventoryCategory,
+  LabTestStatus,
+};
+
 // ==========================
-// Core Models (manual types)
+// Core Models
 // ==========================
 export interface Patient {
   id: string;
@@ -65,7 +79,7 @@ export type RatingWithPatient = Rating & {
 };
 
 // ==========================
-// LabTest Type (matches Prisma schema)
+// LabTest
 // ==========================
 export type LabTest = {
   id: number;
@@ -73,33 +87,35 @@ export type LabTest = {
   result?: string;
   status: LabTestStatus;
   service_id?: number;
-  services?: {
-    id: number;
-    service_name: string;
-  };
-  technician?: {
-    id: string; // Prisma returns string for user IDs
-    name: string;
-  } | null;
-  units?: string; // optional
-  reference_range?: string; // optional
-  notes?: string; // optional
-  medical_record: {
-    id: number;
-    patient: Patient;
-  };
+  services?: { id: number; service_name: string };
+  technician?: { id: string; name: string } | null;
+  units?: string;
+  reference_range?: string;
+  notes?: string;
+  medical_record: { id: number; patient: Patient };
 };
 
 // ==========================
 // Inventory
 // ==========================
 export type InventoryItem = {
-  id: string;
+  id: number;
   name: string;
   category: InventoryCategory;
+  description?: string | null;
   quantity: number;
-  price: number;
+  unit: string;
+  reorder_level: number;
+  cost_price: number;
+  selling_price: number;
+  price: number; // mapped from selling_price
+  batch_number?: string;
+  expiry_date?: Date | null;
+  supplier?: string;
+  last_restocked: Date;
   status: Status;
+  created_at: Date;
+  updated_at: Date;
 };
 
 // ==========================

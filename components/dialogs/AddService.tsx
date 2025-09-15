@@ -66,7 +66,7 @@ export const AddService: React.FC<AddServiceProps> = ({ onServiceAdded }) => {
         <CardHeader className="px-0">
           <DialogTitle>Add New Service</DialogTitle>
           <CardDescription>
-            Ensure accurate readings are performed as this may affect diagnosis and other processes.
+            Manage all your health services from here, including adding new service name and price.
           </CardDescription>
         </CardHeader>
 

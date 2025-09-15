@@ -154,8 +154,10 @@ model Staff {
 
   receptions      Reception[] @relation("ReceptionistReceptions")
   inventory_added Inventory[] @relation("StaffInventory")
+  labTests        LabTest[]   @relation("LabTestTechnician")
 
-  labTests LabTest[] @relation("LabTestTechnician")
+  // <-- New relation to audit logs
+  auditLogs AuditLog[] @relation("StaffAuditLogs")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -302,7 +304,12 @@ model Diagnosis {
 
 model AuditLog {
   id        Int     @id @default(autoincrement())
-  user_id   String
+  user_id   String?          // optional now
+  user      Staff? @relation("StaffAuditLogs", fields: [user_id], references: [id])
+
+  actor_type String  // NEW: "STAFF" | "DOCTOR" | "ADMIN" | "SYSTEM"
+  actor_name String? // optional display name
+
   record_id String
   action    String
   details   String?

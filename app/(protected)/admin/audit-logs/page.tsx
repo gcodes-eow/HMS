@@ -1,3 +1,177 @@
-// app/(protectecd)/admin/audit-logs/page.tsx
-// This is a placeholder file for the Audit Logs page under the admin role. This page is responsible for displaying and managing audit logs within the system. You can implement the actual page content as needed, such as fetching and displaying logs, filtering options, and other related functionalities.
-// You can implement the actual page content as needed. For example, it could include features like viewing audit logs, filtering logs by date or user, and exporting logs for compliance purposes.
+// app/(protected)/admin/audit-logs/page.tsx
+import db from "@/lib/db";
+import { format } from "date-fns";
+import { AppointmentStatus, PaymentStatus, LabTestStatus, Prisma } from "@prisma/client";
+import { Pagination } from "@/components/Pagination";
+import { z } from "zod";
+import { AuditLogSchema } from "@/lib/schema";
+
+// Extend schema to include user relation
+const AuditLogWithUserSchema = AuditLogSchema.extend({
+  user: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string().email(),
+    })
+    .nullable()
+    .optional(),
+});
+
+type AuditLogWithUser = z.infer<typeof AuditLogWithUserSchema>;
+
+interface Props {
+  searchParams?: {
+    p?: string;
+    user?: string;
+    action?: string;
+    status?: string;
+    sort?: "newest" | "oldest";
+  };
+}
+
+export default async function AuditLogsPage({ searchParams }: Props) {
+  const page = searchParams?.p ? parseInt(searchParams.p) : 1;
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  // Build Prisma where clause
+  const where: Prisma.AuditLogWhereInput = {};
+  if (searchParams?.action) where.action = searchParams.action;
+  if (searchParams?.status) where.details = searchParams.status;
+  if (searchParams?.user) {
+    where.user = { name: { contains: searchParams.user, mode: "insensitive" } };
+  }
+
+  // Prisma-safe order
+  const orderBy: Prisma.AuditLogOrderByWithRelationInput = {
+    created_at: searchParams?.sort === "oldest" ? "asc" : "desc",
+  };
+
+  // Fetch total logs and paginated logs
+  const [totalLogs, rawLogs] = await Promise.all([
+    db.auditLog.count({ where }),
+    db.auditLog.findMany({
+      skip: offset,
+      take: limit,
+      where,
+      orderBy,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    }),
+  ]);
+
+  // Validate and parse logs (with user relation)
+  const auditLogs: AuditLogWithUser[] = rawLogs.map((log) =>
+    AuditLogWithUserSchema.parse(log)
+  );
+
+  const totalPages = Math.ceil(totalLogs / limit);
+
+  // Deduplicate statuses for filter dropdown
+  const statuses = Array.from(
+    new Set([
+      ...Object.values(AppointmentStatus),
+      ...Object.values(PaymentStatus),
+      ...Object.values(LabTestStatus),
+    ])
+  );
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold mb-6">Audit Logs</h1>
+
+      {/* Filters */}
+      <form method="get" className="flex flex-wrap gap-2 items-center mb-6">
+        <input
+          name="user"
+          type="text"
+          placeholder="Filter by User Name"
+          defaultValue={searchParams?.user ?? ""}
+          className="border rounded px-2 py-1"
+        />
+        <input
+          name="action"
+          type="text"
+          placeholder="Filter by Action"
+          defaultValue={searchParams?.action ?? ""}
+          className="border rounded px-2 py-1"
+        />
+        <select
+          name="status"
+          defaultValue={searchParams?.status ?? ""}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">All Statuses</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <select
+          name="sort"
+          defaultValue={searchParams?.sort ?? "newest"}
+          className="border rounded px-2 py-1"
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+        <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">
+          Apply
+        </button>
+      </form>
+
+      {/* Table */}
+      {auditLogs.length === 0 ? (
+        <p className="text-gray-600">No audit logs found.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">Date</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">User</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">Action</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">Entity</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">Details / Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {auditLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 text-gray-600">
+                    {log.created_at ? format(new Date(log.created_at), "PPpp") : "-"}
+                  </td>
+                  <td className="px-4 py-2">
+                    {log.user
+                      ? `${log.user.name} (${log.user.email})`
+                      : "System"}
+                  </td>
+                  <td className="px-4 py-2 font-medium">{log.action}</td>
+                  <td className="px-4 py-2">{log.model}</td>
+                  <td className="px-4 py-2 text-gray-500 max-w-xs truncate">
+                    {log.details ?? "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          totalRecords={totalLogs}
+          currentPage={page}
+          totalPages={totalPages}
+          limit={limit}
+        />
+      )}
+    </div>
+  );
+}

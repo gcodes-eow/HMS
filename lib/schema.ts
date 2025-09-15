@@ -455,3 +455,21 @@ export const InventorySchema = z.object({
 });
 
 export type InventorySchemaType = z.infer<typeof InventorySchema>;
+
+// ==========================
+// Input type for creating a log
+// ==========================
+export const AuditLogSchema = z.object({
+  id: z.number().optional(), // Prisma autoincrements
+  user_id: z.string(),
+  record_id: z.string(),
+  action: z.string(),
+  details: z.string().nullable().optional(),
+  model: z.string(),
+  created_at: z.date().optional(),
+  updated_at: z.date().optional(),
+});
+
+// TypeScript type inferred from Zod schema
+export type AuditLogInput = z.infer<typeof AuditLogSchema>;
+

@@ -59,6 +59,71 @@ interface MonthlyData {
   completed: number;
 }
 
+// --------------------- NEW: Get patient by ID ---------------------
+export async function getPatientById(
+  id: string
+): Promise<ServiceResponse<Patient>> {
+  try {
+    const patient = await db.patient.findUnique({ where: { id } });
+
+    if (!patient) {
+      return {
+        success: false,
+        error: true,
+        status: 404,
+        message: "Patient not found",
+        data: null,
+      };
+    }
+
+    return { success: true, error: false, status: 200, data: patient };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: true,
+      status: 500,
+      message: "Internal server error",
+      data: null,
+    };
+  }
+}
+
+// --------------------- NEW: Get patient with full relations ---------------------
+export async function getPatientFullDataById(
+  id: string
+): Promise<ServiceResponse<any>> {
+  try {
+    const patient = await db.patient.findUnique({
+      where: { id },
+      include: {
+        appointments: { include: { doctor: true } },
+      },
+    });
+
+    if (!patient) {
+      return {
+        success: false,
+        error: true,
+        status: 404,
+        message: "Patient not found",
+        data: null,
+      };
+    }
+
+    return { success: true, error: false, status: 200, data: patient };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: true,
+      status: 500,
+      message: "Internal server error",
+      data: null,
+    };
+  }
+}
+
 // --------------------- Process Appointments ---------------------
 export const processAppointments = async (
   appointments: DashboardAppointment[]
@@ -76,29 +141,31 @@ export const processAppointments = async (
     })
   );
 
-  const appointmentCounts = appointments.reduce<Record<AppointmentStatus | "TODAY", number>>(
-    (acc, appointment: DashboardAppointment) => {
-      const status = appointment.status as AppointmentStatus;
-      const appointmentDate = new Date(appointment.appointment_date);
-      const monthIndex = getMonth(appointmentDate);
+  const appointmentCounts = appointments.reduce<
+    Record<AppointmentStatus | "TODAY", number>
+  >((acc, appointment: DashboardAppointment) => {
+    const status = appointment.status as AppointmentStatus;
+    const appointmentDate = new Date(appointment.appointment_date);
+    const monthIndex = getMonth(appointmentDate);
 
-      if (appointmentDate >= startOfYear(new Date()) && appointmentDate <= endOfMonth(new Date())) {
-        monthlyData[monthIndex].appointment += 1;
-        if (status === "COMPLETED") monthlyData[monthIndex].completed += 1;
-      }
+    if (
+      appointmentDate >= startOfYear(new Date()) &&
+      appointmentDate <= endOfMonth(new Date())
+    ) {
+      monthlyData[monthIndex].appointment += 1;
+      if (status === "COMPLETED") monthlyData[monthIndex].completed += 1;
+    }
 
-      if (isToday(appointmentDate)) {
-        acc["TODAY"] = (acc["TODAY"] || 0) + 1;
-      }
+    if (isToday(appointmentDate)) {
+      acc["TODAY"] = (acc["TODAY"] || 0) + 1;
+    }
 
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    },
-    // Initialize only the keys from AppointmentStatus + "TODAY"
-    Object.fromEntries(
-      [...Object.values(AppointmentStatus), "TODAY"].map((key) => [key, 0])
-    ) as Record<AppointmentStatus | "TODAY", number>
-  );
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, Object.fromEntries([...Object.values(AppointmentStatus), "TODAY"].map((key) => [key, 0])) as Record<
+    AppointmentStatus | "TODAY",
+    number
+  >);
 
   return { appointmentCounts, monthlyData };
 };
@@ -143,8 +210,25 @@ export async function getPatientDashboardStatistics(
     const appointmentsRaw = await db.appointment.findMany({
       where: { patient_id: patientData.id },
       include: {
-        doctor: { select: { id: true, name: true, img: true, specialization: true, colorCode: true } },
-        patient: { select: { id: true, first_name: true, last_name: true, gender: true, img: true, colorCode: true } },
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            img: true,
+            specialization: true,
+            colorCode: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            gender: true,
+            img: true,
+            colorCode: true,
+          },
+        },
       },
       orderBy: { appointment_date: "desc" },
     });
@@ -172,13 +256,25 @@ export async function getPatientDashboardStatistics(
       })
     );
 
-    const { appointmentCounts, monthlyData } = await processAppointments(appointments);
+    const { appointmentCounts, monthlyData } =
+      await processAppointments(appointments);
     const last5Records = appointments.slice(0, 5);
 
     const today = daysOfWeek[new Date().getDay()];
     const availableDoctorRaw = await db.doctor.findMany({
-      select: { id: true, name: true, specialization: true, img: true, working_days: true, colorCode: true },
-      where: { working_days: { some: { day: { equals: today, mode: "insensitive" } } } },
+      select: {
+        id: true,
+        name: true,
+        specialization: true,
+        img: true,
+        working_days: true,
+        colorCode: true,
+      },
+      where: {
+        working_days: {
+          some: { day: { equals: today, mode: "insensitive" } },
+        },
+      },
       take: 4,
     });
 
@@ -190,7 +286,11 @@ export async function getPatientDashboardStatistics(
         img: d.img ?? undefined,
         colorCode: d.colorCode ?? undefined,
         working_days: d.working_days.map(
-          (w: typeof d.working_days[number]) => ({ day: w.day, start_time: w.start_time, close_time: w.close_time })
+          (w: typeof d.working_days[number]) => ({
+            day: w.day,
+            start_time: w.start_time,
+            close_time: w.close_time,
+          })
         ),
       })
     );
@@ -212,6 +312,12 @@ export async function getPatientDashboardStatistics(
     };
   } catch (error) {
     console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
+    return {
+      success: false,
+      error: true,
+      message: "Internal Server Error",
+      status: 500,
+      data: null,
+    };
   }
 }

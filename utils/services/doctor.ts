@@ -311,3 +311,57 @@ export async function getAllDoctors({
     return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
   }
 }
+
+// ---------------------------
+// Lightweight Doctor List for Booking Form
+// ---------------------------
+export type DoctorForBooking = {
+  id: string;
+  name: string;
+  specialization: string;
+  license_number: string;
+  department: string | null;
+  type: string;
+  availability_status: string;
+  email: string;
+  phone: string;
+  address: string;
+  img: string | null;
+  colorCode: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export async function getDoctorsForBooking(): Promise<ServiceResponse<DoctorForBooking[]>> {
+  try {
+    const doctors = await db.doctor.findMany();
+
+    const normalized: DoctorForBooking[] = doctors.map((d) => ({
+      id: d.id,
+      name: d.name,
+      specialization: d.specialization ?? "General",
+      license_number: d.license_number ?? "",
+      department: d.department ?? null,
+      type: d.type ?? "DOCTOR",
+      availability_status: d.availability_status ?? "AVAILABLE",
+      email: d.email ?? "",
+      phone: d.phone ?? "",
+      address: d.address ?? "",
+      img: d.img ?? null,
+      colorCode: d.colorCode ?? null,
+      created_at: d.created_at ?? new Date(),
+      updated_at: d.updated_at ?? new Date(),
+    }));
+
+    return { success: true, error: false, status: 200, data: normalized };
+  } catch (error) {
+    console.error(error);
+    return {
+      success: false,
+      error: true,
+      status: 500,
+      message: "Internal server error",
+      data: null,
+    };
+  }
+}

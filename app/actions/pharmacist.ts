@@ -1,6 +1,6 @@
+// app/actions/pharmacist.ts
 "use server";
 
-import { z } from "zod";
 import db from "@/lib/db";
 import { PharmacistSchema } from "@/lib/schema";
 
@@ -16,9 +16,13 @@ type CreatePharmacistRecordFailure = {
   errors?: Record<string, string[]>; // flattened Zod errors
 };
 
-type CreatePharmacistRecordResult = CreatePharmacistRecordSuccess | CreatePharmacistRecordFailure;
+type CreatePharmacistRecordResult =
+  | CreatePharmacistRecordSuccess
+  | CreatePharmacistRecordFailure;
 
-export async function createPharmacistRecord(data: unknown): Promise<CreatePharmacistRecordResult> {
+export async function createPharmacistRecord(
+  data: unknown
+): Promise<CreatePharmacistRecordResult> {
   const parsed = PharmacistSchema.safeParse(data);
 
   if (!parsed.success) {
