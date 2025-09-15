@@ -1,8 +1,12 @@
-// app/(protected)/admin/audit-logs/page.tsx-latest
-
+// app/(protected)/admin/audit-logs/page.tsx
 import db from "@/lib/db";
 import { format } from "date-fns";
-import { AppointmentStatus, PaymentStatus, LabTestStatus, Prisma } from "@prisma/client";
+import {
+  AppointmentStatus,
+  PaymentStatus,
+  LabTestStatus,
+  Prisma,
+} from "@prisma/client";
 import { Pagination } from "@/components/Pagination";
 import { z } from "zod";
 import { AuditLogSchema } from "@/utils/auditLogs"; // <-- fixed import path
@@ -24,9 +28,10 @@ type AuditLogWithUser = z.infer<typeof AuditLogWithUserSchema>;
 export default async function AuditLogsPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = searchParams ?? {};
+  // ✅ await searchParams to satisfy Next.js requirements
+  const params = (await searchParams) ?? {};
 
   const page = params.p ? parseInt(params.p as string, 10) : 1;
   const limit = 10;
@@ -37,7 +42,9 @@ export default async function AuditLogsPage({
   if (params.action) where.action = params.action as string;
   if (params.status) where.details = params.status as string;
   if (params.user) {
-    where.user = { name: { contains: params.user as string, mode: "insensitive" } };
+    where.user = {
+      name: { contains: params.user as string, mode: "insensitive" },
+    };
   }
 
   const orderBy: Prisma.AuditLogOrderByWithRelationInput = {
@@ -111,7 +118,10 @@ export default async function AuditLogsPage({
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
         </select>
-        <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">
+        <button
+          type="submit"
+          className="px-3 py-1 bg-blue-500 text-white rounded"
+        >
           Apply
         </button>
       </form>
@@ -124,10 +134,18 @@ export default async function AuditLogsPage({
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">Date</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">User</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">Action</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-700">Entity</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                  Date
+                </th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                  User
+                </th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                  Action
+                </th>
+                <th className="px-4 py-2 text-left font-medium text-gray-700">
+                  Entity
+                </th>
                 <th className="px-4 py-2 text-left font-medium text-gray-700">
                   Details / Status
                 </th>
@@ -137,10 +155,14 @@ export default async function AuditLogsPage({
               {auditLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 text-gray-600">
-                    {log.created_at ? format(new Date(log.created_at), "PPpp") : "-"}
+                    {log.created_at
+                      ? format(new Date(log.created_at), "PPpp")
+                      : "-"}
                   </td>
                   <td className="px-4 py-2">
-                    {log.user ? `${log.user.name} (${log.user.email})` : "System"}
+                    {log.user
+                      ? `${log.user.name} (${log.user.email})`
+                      : "System"}
                   </td>
                   <td className="px-4 py-2 font-medium">{log.action}</td>
                   <td className="px-4 py-2">{log.model}</td>
