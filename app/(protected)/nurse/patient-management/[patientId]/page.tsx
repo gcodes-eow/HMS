@@ -11,36 +11,31 @@ import { VitalSigns } from "@/components/appointment/VitalSigns";
 import { AdministerMedicationForm } from "@/components/forms/AdministerMedicationForm";
 import RecentAppointments from "@/components/tables/RecentAppointments";
 
+// Use proper Next.js PageProps typing
 interface PatientPageProps {
   params: { patientId: string };
 }
 
 const PatientDetailPage = async ({ params }: PatientPageProps) => {
-  // Check user role
   const role = await getRole();
   if (role !== "nurse") return redirect("/unauthorized");
 
-  // Ensure user is logged in
   const user = await currentUser();
   if (!user?.id) return redirect("/sign-in");
 
-  // Fetch patient info
   const patient = await db.patient.findUnique({
     where: { id: params.patientId },
   });
   if (!patient) return redirect("/404");
 
-  // Fetch medication history
   const records = await getMedicationsForPatient(params.patientId);
 
-  // Fetch latest appointment
   const latestAppointment = await db.appointment.findFirst({
     where: { patient_id: params.patientId },
     orderBy: { appointment_date: "desc" },
     include: { doctor: true },
   });
 
-  // Fetch recent appointments
   const recentAppointments = await db.appointment.findMany({
     where: { patient_id: params.patientId },
     orderBy: { appointment_date: "desc" },
@@ -52,16 +47,13 @@ const PatientDetailPage = async ({ params }: PatientPageProps) => {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-semibold">Patient Profile</h1>
 
-      {/* Patient Profile Card */}
       <PatientDetailsCard data={patient} />
 
-      {/* Medication History */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Medication History</h2>
         <MedicationHistoryTable records={records} />
       </div>
 
-      {/* Administer Medication Form */}
       {latestAppointment && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Administer Medication</h2>
@@ -73,26 +65,22 @@ const PatientDetailPage = async ({ params }: PatientPageProps) => {
                 last_name: patient.last_name,
               },
             ]}
-            onSuccess={(record) => {
-              alert(`Medication recorded: ${record.medication}`);
-            }}
+            onSuccess={(record) => alert(`Medication recorded: ${record.medication}`)}
           />
         </div>
       )}
 
-      {/* Vital Signs Section */}
-      {latestAppointment && latestAppointment.doctor && (
+      {latestAppointment && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Vital Signs</h2>
           <VitalSigns
             id={latestAppointment.id}
             patientId={patient.id}
-            doctorId={latestAppointment.doctor.id}
+            doctorId={latestAppointment.doctor_id}
           />
         </div>
       )}
 
-      {/* Recent Appointments */}
       <div className="space-y-4">
         <RecentAppointments data={recentAppointments} />
       </div>
