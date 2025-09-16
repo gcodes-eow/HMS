@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": false,
     "skipLibCheck": false,
     "strict": true,
@@ -14,7 +18,11 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "preserve", // ✅ changed
+    "types": [
+      "react",
+      "node"
+    ], // ✅ added
     "incremental": true,
     "plugins": [
       {
@@ -26,14 +34,19 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
-, "prisma.config.js"  ],
-  "exclude": ["node_modules"]
+    ".next/types/**/*.ts",
+    "prisma.config.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

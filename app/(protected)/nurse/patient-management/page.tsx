@@ -1,18 +1,22 @@
 // app/(protected)/nurse/patient-management/page.tsx
-import { getRole } from "@/utils/roles";
 import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
+import { getRole } from "@/utils/roles";
 import { getNursePatients } from "@/utils/services/nurse";
 import PatientManagementClient from "./PatientManagementClient";
+import type { JSX } from "react";
 
-const PatientManagementPage = async () => {
+// No params needed for this static page
+const PatientManagementPage = async (): Promise<JSX.Element> => {
+  // Role check
   const role = await getRole();
   if (role !== "nurse") return redirect("/unauthorized");
 
+  // Current user check
   const user = await currentUser();
   if (!user?.id) return redirect("/sign-in");
 
-  // 🔹 Fetch patients assigned to this nurse
+  // Fetch patients for the nurse
   const patients = await getNursePatients(user.id);
 
   return (

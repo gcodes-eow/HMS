@@ -12,46 +12,44 @@ import { VitalSigns } from "@/components/appointment/VitalSigns";
 import { AdministerMedicationForm } from "@/components/forms/AdministerMedicationForm";
 import RecentAppointments from "@/components/tables/RecentAppointments";
 
-// ✅ Props must match Next.js expected PageProps
+// Use flexible props typing similar to AuditLogsPage
 interface PatientDetailPageProps {
-  params: Promise<{ patientId: string }>; // required Promise
-  searchParams?: Promise<any>;           // optional
+  params?: Promise<Record<string, string | string[] | undefined>>;
+  searchParams?: Promise<any>;
 }
 
 const PatientDetailPage = async ({
   params,
 }: PatientDetailPageProps): Promise<JSX.Element> => {
-  // ✅ Await the promise to get actual params
-  const resolvedParams = await params;
-  const patientId = resolvedParams.patientId;
+  // Await the promise and default to empty object
+  const resolvedParams = (await params) ?? {};
+  const patientId = resolvedParams.patientId as string;
 
   if (!patientId) return redirect("/404");
 
-  // ✅ Role check
+  // Role check
   const role = await getRole();
   if (role !== "nurse") return redirect("/unauthorized");
 
-  // ✅ Current user check
+  // Current user check
   const user = await currentUser();
   if (!user?.id) return redirect("/sign-in");
 
-  // ✅ Fetch patient info
-  const patient = await db.patient.findUnique({
-    where: { id: patientId },
-  });
+  // Fetch patient info
+  const patient = await db.patient.findUnique({ where: { id: patientId } });
   if (!patient) return redirect("/404");
 
-  // ✅ Fetch medication history
+  // Fetch medication history
   const records = await getMedicationsForPatient(patientId);
 
-  // ✅ Fetch latest appointment
+  // Fetch latest appointment
   const latestAppointment = await db.appointment.findFirst({
     where: { patient_id: patientId },
     orderBy: { appointment_date: "desc" },
     include: { doctor: true },
   });
 
-  // ✅ Fetch recent appointments
+  // Fetch recent appointments
   const recentAppointments = await db.appointment.findMany({
     where: { patient_id: patientId },
     orderBy: { appointment_date: "desc" },
