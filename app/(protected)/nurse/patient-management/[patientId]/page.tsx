@@ -4,6 +4,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { getRole } from "@/utils/roles";
 import db from "@/lib/db";
 import { getMedicationsForPatient } from "@/utils/services/nurse";
+import type { JSX } from "react";
 
 import { PatientDetailsCard } from "@/components/appointment/PatientDetailsCard";
 import MedicationHistoryTable from "@/components/tables/MedicationHistoryTable";
@@ -11,33 +12,48 @@ import { VitalSigns } from "@/components/appointment/VitalSigns";
 import { AdministerMedicationForm } from "@/components/forms/AdministerMedicationForm";
 import RecentAppointments from "@/components/tables/RecentAppointments";
 
-// Use proper Next.js PageProps typing
-interface PatientPageProps {
-  params: { patientId: string };
+// ✅ Props must match Next.js expected PageProps
+interface PatientDetailPageProps {
+  params: Promise<{ patientId: string }>; // required Promise
+  searchParams?: Promise<any>;           // optional
 }
 
-const PatientDetailPage = async ({ params }: PatientPageProps) => {
+const PatientDetailPage = async ({
+  params,
+}: PatientDetailPageProps): Promise<JSX.Element> => {
+  // ✅ Await the promise to get actual params
+  const resolvedParams = await params;
+  const patientId = resolvedParams.patientId;
+
+  if (!patientId) return redirect("/404");
+
+  // ✅ Role check
   const role = await getRole();
   if (role !== "nurse") return redirect("/unauthorized");
 
+  // ✅ Current user check
   const user = await currentUser();
   if (!user?.id) return redirect("/sign-in");
 
+  // ✅ Fetch patient info
   const patient = await db.patient.findUnique({
-    where: { id: params.patientId },
+    where: { id: patientId },
   });
   if (!patient) return redirect("/404");
 
-  const records = await getMedicationsForPatient(params.patientId);
+  // ✅ Fetch medication history
+  const records = await getMedicationsForPatient(patientId);
 
+  // ✅ Fetch latest appointment
   const latestAppointment = await db.appointment.findFirst({
-    where: { patient_id: params.patientId },
+    where: { patient_id: patientId },
     orderBy: { appointment_date: "desc" },
     include: { doctor: true },
   });
 
+  // ✅ Fetch recent appointments
   const recentAppointments = await db.appointment.findMany({
-    where: { patient_id: params.patientId },
+    where: { patient_id: patientId },
     orderBy: { appointment_date: "desc" },
     take: 5,
     include: { doctor: true, patient: true },
@@ -65,7 +81,9 @@ const PatientDetailPage = async ({ params }: PatientPageProps) => {
                 last_name: patient.last_name,
               },
             ]}
-            onSuccess={(record) => alert(`Medication recorded: ${record.medication}`)}
+            onSuccess={(record) =>
+              alert(`Medication recorded: ${record.medication}`)
+            }
           />
         </div>
       )}
@@ -81,9 +99,7 @@ const PatientDetailPage = async ({ params }: PatientPageProps) => {
         </div>
       )}
 
-      <div className="space-y-4">
-        <RecentAppointments data={recentAppointments} />
-      </div>
+      <RecentAppointments data={recentAppointments} />
     </div>
   );
 };
