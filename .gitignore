@@ -1,0 +1,76 @@
+# ================================
+# 📦 Dependency directories
+# ================================
+/node_modules/
+/.pnp/
+/.pnp.*
+
+# ================================
+# 🔐 Environment variables
+# ================================
+.env*                 # All .env files (local, production, etc.)
+
+# ================================
+# ⚙️ Build output
+# ================================
+.next/
+.out/
+.build/
+coverage/
+
+# ================================
+# 🧪 Debug logs
+# ================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ================================
+# 🧠 TypeScript artifacts
+# ================================
+*.tsbuildinfo
+next-env.d.ts
+
+# ================================
+# 🧬 VS Code settings
+# ================================
+.vscode/*
+!.vscode/settings.json
+
+# ================================
+# 🧼 OS-specific files
+# ================================
+.DS_Store
+Thumbs.db
+
+# ================================
+# 🧶 Yarn-specific files
+# ================================
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ================================
+# 🐳 Docker & database
+# ================================
+*.sql
+pgdata/
+Dockerfile
+docker-compose.yml
+
+# ================================
+# 🔑 SSL keys
+# ================================
+*.pem
+
+# ================================
+# 🔐 Clerk configuration
+# ================================
+.clerk/
+
+# ================================
+# Misc / IDE / dist
+# ================================
+dist/
