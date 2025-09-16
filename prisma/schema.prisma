@@ -99,6 +99,9 @@ model Patient {
   ratings           Rating[]
   pharmacistRecords PharmacistRecord[]
 
+  // ===== Back-relation to medications administered to this patient =====
+  medicationRecords MedicationAdministration[]
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -156,8 +159,28 @@ model Staff {
   inventory_added Inventory[] @relation("StaffInventory")
   labTests        LabTest[]   @relation("LabTestTechnician")
 
-  // <-- New relation to audit logs
+  // Relation to audit logs
   auditLogs AuditLog[] @relation("StaffAuditLogs")
+
+  // ===== Back-relation to medications administered by this nurse =====
+  medicationRecords MedicationAdministration[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model MedicationAdministration {
+  id             String   @id @default(cuid())   // ✅ String instead of Int
+  patientId      String
+  nurseId        String   // references Staff (role = NURSE)
+  medication     String
+  dosage         String
+  administeredAt DateTime
+  notes          String?
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  nurse   Staff   @relation(fields: [nurseId], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -303,12 +326,12 @@ model Diagnosis {
 }
 
 model AuditLog {
-  id        Int     @id @default(autoincrement())
-  user_id   String?          // optional now
-  user      Staff? @relation("StaffAuditLogs", fields: [user_id], references: [id])
+  id      Int     @id @default(autoincrement())
+  user_id String? // optional
+  user    Staff?  @relation("StaffAuditLogs", fields: [user_id], references: [id])
 
-  actor_type String  // NEW: "STAFF" | "DOCTOR" | "ADMIN" | "SYSTEM"
-  actor_name String? // optional display name
+  actor_type String  @default("SYSTEM") // <-- default value for existing rows
+  actor_name String?
 
   record_id String
   action    String

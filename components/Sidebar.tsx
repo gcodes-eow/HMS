@@ -1,3 +1,4 @@
+// components/Sidebar.tsx
 "use client";
 
 import React from "react";
@@ -75,8 +76,11 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
         { name: "Laboratory", href: "/laboratory", access: ["admin", "doctor", "nurse", "laboratory"], icon: SquareActivity },
         { name: "Billing Overview", href: "/record/billing", access: ["admin", "doctor", "cashier", "receptionist"], icon: Receipt },
         { name: "Inventory", href: "/record/inventory", access: ["admin", "pharmacist", "cashier"], icon: Pill },
-        { name: "Patient Management", href: "/nurse/patient-management", access: ["nurse"], icon: Users },
+
+        // Updated access for nurse routes
+        { name: "Patient Management", href: "/nurse/patient-management", access: ["admin", "doctor", "nurse"], icon: Users },
         { name: "Administer Medications", href: "/nurse/administer-medications", access: ["admin", "doctor", "nurse", "pharmacist"], icon: Pill },
+
         { name: "Records", href: "/patient/self", access: ["patient"], icon: List },
         { name: "Prescription", href: "#", access: ["patient", "pharmacist"], icon: Pill },
         { name: "Billing", href: "/patient/self?cat=payments", access: ["patient", "cashier", "receptionist"], icon: Receipt },

@@ -169,3 +169,16 @@ export interface PatientDashboardData {
   availableDoctor: AvailableDoctorProps;
   monthlyData: AppointmentsChartProps;
 }
+
+// ==========================
+// Nurse Types
+// ==========================
+export interface MedicationAdministration {
+  id: string;
+  patientId: string;
+  nurseId: string;
+  medication: string;
+  dosage: string;
+  administeredAt: Date;
+  notes?: string;
+}

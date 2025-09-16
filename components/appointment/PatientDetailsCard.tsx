@@ -1,4 +1,4 @@
-// components/appointment/patient-details-card.tsx
+// components/appointment/PatientDetailsCard.tsx
 import { Patient } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import Image from "next/image";

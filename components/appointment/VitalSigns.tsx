@@ -1,4 +1,4 @@
-// components/appointment/vital-signs.tsx
+// components/appointment/VitalSigns.tsx
 import db from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { calculateBMI } from "@/utils";

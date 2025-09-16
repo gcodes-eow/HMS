@@ -22,6 +22,7 @@ async function seed() {
   await prisma.rating.deleteMany();
   await prisma.patientBills.deleteMany();
   await prisma.payment.deleteMany();
+  await prisma.medicationAdministration.deleteMany();
   await prisma.labTest.deleteMany();
   await prisma.medicalRecords.deleteMany();
   await prisma.vitalSigns.deleteMany();
@@ -63,15 +64,52 @@ async function seed() {
 
   // Seed Services
   const services = await prisma.$transaction([
-    prisma.services.create({ data: { service_name: "General Consultation", description: "Standard doctor consultation", price: 50 } }),
-    prisma.services.create({ data: { service_name: "Blood Test (Complete CBC)", description: "Comprehensive blood test", price: 40 } }),
-    prisma.services.create({ data: { service_name: "X-Ray (Chest)", description: "Chest radiography", price: 80 } }),
-    prisma.services.create({ data: { service_name: "MRI Scan", description: "Detailed MRI imaging", price: 500 } }),
-    prisma.services.create({ data: { service_name: "Physiotherapy Session", description: "Rehabilitation session", price: 60 } }),
+    prisma.services.create({
+      data: {
+        service_name: "General Consultation",
+        description: "Standard doctor consultation",
+        price: 50,
+      },
+    }),
+    prisma.services.create({
+      data: {
+        service_name: "Blood Test (Complete CBC)",
+        description: "Comprehensive blood test",
+        price: 40,
+      },
+    }),
+    prisma.services.create({
+      data: {
+        service_name: "X-Ray (Chest)",
+        description: "Chest radiography",
+        price: 80,
+      },
+    }),
+    prisma.services.create({
+      data: {
+        service_name: "MRI Scan",
+        description: "Detailed MRI imaging",
+        price: 500,
+      },
+    }),
+    prisma.services.create({
+      data: {
+        service_name: "Physiotherapy Session",
+        description: "Rehabilitation session",
+        price: 60,
+      },
+    }),
   ]);
 
   // Seed Staff
-  const staffRoles: Role[] = [Role.NURSE, Role.CASHIER, Role.LABORATORY, Role.ADMIN, Role.PHARMACIST, Role.RECEPTIONIST];
+  const staffRoles: Role[] = [
+    Role.NURSE,
+    Role.CASHIER,
+    Role.LABORATORY,
+    Role.ADMIN,
+    Role.PHARMACIST,
+    Role.RECEPTIONIST,
+  ];
   const allStaff: any[] = [];
   for (const role of staffRoles) {
     const staff = await prisma.staff.create({
@@ -176,7 +214,12 @@ async function seed() {
   }
 
   // Seed Inventory
-  const categories = ["MEDICATION", "CONSUMABLE", "EQUIPMENT", "OTHER"] as const;
+  const categories = [
+    "MEDICATION",
+    "CONSUMABLE",
+    "EQUIPMENT",
+    "OTHER",
+  ] as const;
   for (let i = 0; i < 15; i++) {
     const item = await prisma.inventory.create({
       data: {
@@ -233,7 +276,35 @@ async function seed() {
         },
       });
 
-      // Payment (always 1 per appointment)
+      // === Medication Administration (NEW) ===
+      const nurse = allStaff.find((s) => s.role === Role.NURSE);
+      if (nurse) {
+        const medAdmin = await prisma.medicationAdministration.create({
+          data: {
+            patientId: patient.id,
+            nurseId: nurse.id,
+            medication: faker.helpers.arrayElement([
+              "Paracetamol",
+              "Ibuprofen",
+              "Amoxicillin",
+            ]),
+            dosage: faker.helpers.arrayElement(["250mg", "500mg", "1g"]),
+            administeredAt: faker.date.recent(),
+            notes: faker.lorem.sentence(),
+          },
+        });
+        await prisma.auditLog.create({
+          data: {
+            user_id: systemUser.id,
+            record_id: medAdmin.id,
+            action: "SEED_MEDICATION_ADMIN_CREATE",
+            details: `Administered ${medAdmin.medication} to patient ${patient.first_name} ${patient.last_name}`,
+            model: "MedicationAdministration",
+          },
+        });
+      }
+
+      // Payment (1 per appointment)
       const payment = await prisma.payment.create({
         data: {
           appointment_id: appointment.id,
@@ -243,8 +314,15 @@ async function seed() {
           discount: faker.number.int({ min: 0, max: 20 }),
           total_amount: faker.number.float({ min: 50, max: 500 }),
           amount_paid: faker.number.float({ min: 20, max: 500 }),
-          payment_method: faker.helpers.arrayElement([PaymentMethod.CASH, PaymentMethod.CARD]),
-          status: faker.helpers.arrayElement([PaymentStatus.PAID, PaymentStatus.UNPAID, PaymentStatus.PART]),
+          payment_method: faker.helpers.arrayElement([
+            PaymentMethod.CASH,
+            PaymentMethod.CARD,
+          ]),
+          status: faker.helpers.arrayElement([
+            PaymentStatus.PAID,
+            PaymentStatus.UNPAID,
+            PaymentStatus.PART,
+          ]),
           bills: {
             create: {
               service_id: faker.helpers.arrayElement(services).id,
@@ -266,7 +344,7 @@ async function seed() {
         },
       });
 
-      // Medical Records (1 per appointment)
+      // Medical Records
       const record = await prisma.medicalRecords.create({
         data: {
           patient_id: patient.id,
@@ -288,7 +366,7 @@ async function seed() {
         },
       });
 
-      // Vital Signs (1 per medical record)
+      // Vital Signs
       const vitals = await prisma.vitalSigns.create({
         data: {
           patient_id: patient.id,
@@ -313,7 +391,7 @@ async function seed() {
         },
       });
 
-      // Diagnosis (1 per medical record)
+      // Diagnosis
       const diagnosis = await prisma.diagnosis.create({
         data: {
           patient_id: patient.id,
@@ -336,7 +414,7 @@ async function seed() {
         },
       });
 
-      // Lab Test (always 1 per medical record)
+      // Lab Test
       const lab = await prisma.labTest.create({
         data: {
           record_id: record.id,
@@ -357,7 +435,7 @@ async function seed() {
         },
       });
 
-      // Rating (1 per appointment)
+      // Rating
       const rating = await prisma.rating.create({
         data: {
           staff_id: doctor.id,

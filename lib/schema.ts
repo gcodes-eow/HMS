@@ -473,3 +473,18 @@ export const AuditLogSchema = z.object({
 // TypeScript type inferred from Zod schema
 export type AuditLogInput = z.infer<typeof AuditLogSchema>;
 
+// ===================================
+// Schema for Medication Administration
+// ===================================
+export const MedicationAdministrationSchema = z.object({
+  patientId: z.string().uuid({ message: "Invalid patient ID" }),
+  nurseId: z.string().uuid({ message: "Invalid nurse ID" }),
+  medication: z.string().min(1, "Medication name is required"),
+  dosage: z.string().min(1, "Dosage is required"),
+  administeredAt: z.coerce.date(),
+  notes: z.string().optional(),
+});
+
+export type MedicationAdministrationInput = z.infer<
+  typeof MedicationAdministrationSchema
+>;

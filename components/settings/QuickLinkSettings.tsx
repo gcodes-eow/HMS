@@ -1,3 +1,4 @@
+// components/settings/QuickLinkSettings.tsx
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 

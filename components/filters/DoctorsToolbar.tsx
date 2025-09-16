@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import SearchInput from "@/components/SearchInput";
+import SearchInput from "@/components/appointment/SearchInput";
 import { DoctorForm } from "@/components/forms/DoctorForm";
 
 interface Props {
