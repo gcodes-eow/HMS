@@ -1,34 +1,27 @@
+// utils/services/medicalServices.ts
 "use server";
 
 import db from "@/lib/db";
 import { DiagnosisFormData } from "@/components/dialogs/AddDiagnosis";
+import { format } from "date-fns";
 import {
   DiagnosisSchema,
   PatientBillSchema,
   PaymentSchema,
 } from "@/lib/schema";
 import { checkRole } from "@/utils/roles";
-
-/* ------------------------------------------------------
- * Shared Types
- * ---------------------------------------------------- */
-export interface ServiceResponse<T> {
-  success: boolean;
-  error: boolean;
-  status: number;
-  message?: string;
-  data?: T | null;
-  totalRecords?: number;
-}
+import {
+  MedicationAdministration,
+  ServiceResponse,
+  PaginatedResponse,
+} from "@/types/dataTypes";
 
 /* ------------------------------------------------------
  * Services CRUD
  * ---------------------------------------------------- */
 export async function getServices(): Promise<ServiceResponse<any[]>> {
   try {
-    const services = await db.services.findMany({
-      orderBy: { id: "asc" },
-    });
+    const services = await db.services.findMany({ orderBy: { id: "asc" } });
     return {
       success: true,
       error: false,
@@ -48,7 +41,9 @@ export async function getServices(): Promise<ServiceResponse<any[]>> {
   }
 }
 
-export async function getServiceById(id: number): Promise<ServiceResponse<any>> {
+export async function getServiceById(
+  id: number
+): Promise<ServiceResponse<any>> {
   try {
     const service = await db.services.findUnique({ where: { id } });
     if (!service) {
@@ -73,7 +68,11 @@ export async function getServiceById(id: number): Promise<ServiceResponse<any>> 
   }
 }
 
-export async function createService(input: { service_name: string; description?: string; price: number }) {
+export async function createService(input: {
+  service_name: string;
+  description?: string;
+  price: number;
+}) {
   try {
     const service = await db.services.create({
       data: {
@@ -129,7 +128,6 @@ export async function updateService(
 export async function deleteService(id: number) {
   try {
     await db.services.delete({ where: { id } });
-
     return {
       success: true,
       error: false,
@@ -139,7 +137,6 @@ export async function deleteService(id: number) {
     };
   } catch (error: any) {
     console.error("Error deleting service:", error);
-
     if (error.code === "P2003") {
       return {
         success: false,
@@ -150,7 +147,6 @@ export async function deleteService(id: number) {
         data: null,
       };
     }
-
     return {
       success: false,
       error: true,
@@ -160,6 +156,79 @@ export async function deleteService(id: number) {
     };
   }
 }
+
+/* ------------------------------------------------------
+ * Vital Signs
+ * ---------------------------------------------------- */
+export const getVitalSignData = async (id: string) => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const data = await db.vitalSigns.findMany({
+    where: {
+      patient_id: id,
+      created_at: {
+        gte: sevenDaysAgo,
+      },
+    },
+    select: {
+      created_at: true,
+      systolic: true,
+      diastolic: true,
+      heart_rate: true,
+    },
+    orderBy: {
+      created_at: "asc",
+    },
+  });
+  // 56 - 60
+  const formatVitals = data?.map((record) => ({
+    label: format(new Date(record.created_at), "MMM d"),
+    systolic: record.systolic,
+    diastolic: record.diastolic,
+  }));
+
+  const formattedData = data.map((record) => {
+    const heartRates = record.heart_rate
+      .split("-")
+      .map((rate) => parseInt(rate.trim()));
+
+    return {
+      label: format(new Date(record.created_at), "MMM d"),
+      value1: heartRates[0],
+      value2: heartRates[1],
+    };
+  });
+
+  const totalSystolic = data?.reduce((sum, acc) => sum + acc.systolic, 0);
+  const totalDiastolic = data?.reduce((sum, acc) => sum + acc.diastolic, 0);
+
+  const totalValue1 = formattedData?.reduce((sum, acc) => sum + acc.value1, 0);
+  const totalValue2 = formattedData?.reduce((sum, acc) => sum + acc.value2, 0);
+
+  const count = data?.length;
+
+  const averageSystolic = totalSystolic / count;
+  const averageDiastolic = totalDiastolic / count;
+
+  const averageValue1 = totalValue1 / count;
+  const averageValue2 = totalValue2 / count;
+
+  const average = `${averageSystolic.toFixed(2)}/${averageDiastolic.toFixed(
+    2
+  )} mg/dL`;
+  const averageHeartRate = `${averageValue1.toFixed(2)}-${averageValue2.toFixed(
+    2
+  )} bpm`;
+
+  return {
+    data: formatVitals,
+    average,
+    heartRateData: formattedData,
+    averageHeartRate,
+  };
+};
+
 
 /* ------------------------------------------------------
  * Diagnosis & Billing
@@ -172,7 +241,6 @@ export const addDiagnosis = async (
     const validatedData = DiagnosisSchema.parse(data);
 
     let medicalRecord = null;
-
     if (!validatedData.medical_id) {
       medicalRecord = await db.medicalRecords.create({
         data: {
@@ -185,10 +253,7 @@ export const addDiagnosis = async (
 
     const med_id = validatedData.medical_id || medicalRecord?.id;
     await db.diagnosis.create({
-      data: {
-        ...validatedData,
-        medical_id: Number(med_id),
-      },
+      data: { ...validatedData, medical_id: Number(med_id) },
     });
 
     return {
@@ -197,12 +262,8 @@ export const addDiagnosis = async (
       status: 201,
     };
   } catch (error) {
-    console.log(error);
-    return {
-      success: false,
-      message: "Failed to add diagnosis",
-      status: 500,
-    };
+    console.error(error);
+    return { success: false, message: "Failed to add diagnosis", status: 500 };
   }
 };
 
@@ -210,13 +271,8 @@ export async function addNewBill(data: any) {
   try {
     const isAdmin = await checkRole("ADMIN");
     const isDoctor = await checkRole("DOCTOR");
-
-    if (!isAdmin && !isDoctor) {
-      return {
-        success: false,
-        msg: "You are not authorized to add a bill",
-      };
-    }
+    if (!isAdmin && !isDoctor)
+      return { success: false, msg: "You are not authorized to add a bill" };
 
     const isValidData = PatientBillSchema.safeParse(data);
     const validatedData = isValidData.data;
@@ -228,9 +284,7 @@ export async function addNewBill(data: any) {
         select: {
           id: true,
           patient_id: true,
-          bills: {
-            where: { appointment_id: Number(data?.appointment_id) },
-          },
+          bills: { where: { appointment_id: Number(data?.appointment_id) } },
         },
       });
 
@@ -246,12 +300,8 @@ export async function addNewBill(data: any) {
             total_amount: 0.0,
           },
         });
-      } else {
-        bill_info = info?.bills[0];
-      }
-    } else {
-      bill_info = { id: data?.bill_id };
-    }
+      } else bill_info = info?.bills[0];
+    } else bill_info = { id: data?.bill_id };
 
     await db.patientBills.create({
       data: {
@@ -264,22 +314,16 @@ export async function addNewBill(data: any) {
       },
     });
 
-    return {
-      success: true,
-      error: false,
-      msg: `Bill added successfully`,
-    };
+    return { success: true, error: false, msg: `Bill added successfully` };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { success: false, msg: "Internal Server Error" };
   }
 }
 
 export async function generateBill(data: any) {
   try {
-    const isValidData = PaymentSchema.safeParse(data);
-    const validatedData = isValidData.data;
-
+    const validatedData = PaymentSchema.parse(data);
     const discountAmount =
       (Number(validatedData?.discount) / 100) *
       Number(validatedData?.total_amount);
@@ -298,13 +342,54 @@ export async function generateBill(data: any) {
       where: { id: res.appointment_id },
     });
 
-    return {
-      success: true,
-      error: false,
-      msg: `Bill generated successfully`,
-    };
+    return { success: true, error: false, msg: `Bill generated successfully` };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { success: false, msg: "Internal Server Error" };
   }
 }
+
+/* ------------------------------------------------------
+ * Medication administration pagination
+ * ---------------------------------------------------- */
+export const getAllMedicationAdministrationsPaginated = async (
+  page: number,
+  limit: number
+): Promise<PaginatedResponse<MedicationAdministration>> => {
+  const totalRecords = await db.medicationAdministration.count();
+
+  const rawData = await db.medicationAdministration.findMany({
+    skip: (page - 1) * limit,
+    take: limit,
+    orderBy: { administered_at: "desc" },
+    include: {
+      patient: { select: { first_name: true, last_name: true } },
+      staff: { select: { name: true, role: true } },
+    },
+  });
+
+  const data: MedicationAdministration[] = rawData.map((d) => ({
+    id: d.id,
+    patientId: d.patient_id,
+    staffId: d.staff_id,
+    doctorId: d.doctor_id ?? undefined,
+    patientName: `${d.patient.first_name} ${d.patient.last_name}`,
+    staffName: d.staff.name,
+    staffRole: d.staff.role,
+    medication: d.medication,
+    dosage: d.dosage,
+    administeredAt: d.administered_at,
+    notes: d.notes ?? undefined,
+  }));
+
+  return {
+    success: true,
+    error: false,
+    status: 200,
+    data,
+    totalRecords,
+    totalPages: Math.ceil(totalRecords / limit),
+    currentPage: page,
+    limit,
+  };
+};

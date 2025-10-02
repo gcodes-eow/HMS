@@ -1,4 +1,3 @@
-// components/RatingContainer.tsx
 "use client";
 
 import React from "react";
@@ -15,7 +14,7 @@ export const RatingContainer = async ({ id }: RatingContainerProps) => {
   const ratingsData: RatingData | null | undefined = res.data;
 
   if (!ratingsData) {
-    return <p className="text-gray-600">No ratings found.</p>;
+    return <p className="text-gray-600 dark:text-gray-300">No ratings found.</p>;
   }
 
   const { ratings, totalRatings, averageRating } = ratingsData;

@@ -2,26 +2,28 @@
 import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
 
-export type StaffStatus = "ACTIVE" | "INACTIVE" | "DORMANT";
+// ✅ import runtime enums from central types
+import { Role, Status } from "@/types/dataTypes";
 
+// ✅ local Staff interface aligned with central enums
 export interface Staff {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  role: string;
-  status: StaffStatus;
+  role: Role;        // enforce Role enum
+  status: Status;    // enforce Status enum
   img?: string | null;
-  colorCode?: string | null;
-  created_at?: Date | string; // could come from DB as string
+  color_code?: string | null;
+  created_at?: Date | string;
 }
 
 export interface TableStaff extends Staff {
   index: number;
   phone: string;
   img: string;
-  colorCode: string;
-  created_at: Date; // required for table display
+  color_code: string;
+  created_at: Date;
 }
 
 export interface ServiceResponse<T> {
@@ -43,7 +45,7 @@ interface GetAllStaffProps {
 
 /**
  * Normalize staff data for table display:
- * - Ensures index, phone, img, colorCode, and created_at exist
+ * - Ensures index, phone, img, color_code, and created_at exist
  */
 export function normalizeStaffData(staff: Staff[]): TableStaff[] {
   return staff.map((s, index) => ({
@@ -51,7 +53,7 @@ export function normalizeStaffData(staff: Staff[]): TableStaff[] {
     index,
     phone: s.phone ?? "",
     img: s.img ?? "",
-    colorCode: s.colorCode ?? "#ccc",
+    color_code: s.color_code ?? "#ccc",
     created_at: s.created_at ? new Date(s.created_at) : new Date(),
   }));
 }
@@ -94,7 +96,7 @@ export async function getAllStaff({
     return {
       success: true,
       error: false,
-      data: normalizeStaffData(staff), // fully typed and safe
+      data: normalizeStaffData(staff as Staff[]), // cast Prisma result
       totalRecords,
       totalPages,
       currentPage: PAGE_NUMBER,

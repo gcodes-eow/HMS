@@ -1,0 +1,1 @@
+// components/events/EventFilters.tsx

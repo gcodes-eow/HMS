@@ -20,6 +20,7 @@ export const getRole = async (): Promise<string> => {
     "pharmacist",
     "receptionist",
     "laboratory",
+    "manager",
   ];
 
   const rawRole = sessionClaims?.metadata?.role?.toLowerCase();

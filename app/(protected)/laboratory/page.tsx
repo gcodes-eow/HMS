@@ -9,7 +9,7 @@ import {
 } from "@/utils/services/laboratory";
 import LabTestForm from "@/components/forms/LabTestForm";
 import { Pagination } from "@/components/Pagination";
-import ToggleLabFormButton from "@/components/laboratory/ToggleLabFormButton";
+import ToggleLabFormButton from "@/components/ToggleLabFormButton";
 import { LabTestTable } from "@/components/tables/LabTestTable";
 import { LabTest } from "@/types/dataTypes";
 
@@ -57,13 +57,13 @@ const LabTechnicianDashboard = async ({ searchParams }: Props) => {
   }
 
   const rawPatients = await db.patient.findMany({
-    select: { id: true, first_name: true, last_name: true, gender: true, img: true, colorCode: true },
+    select: { id: true, first_name: true, last_name: true, gender: true, img: true, color_code: true },
   });
 
   const patients = rawPatients.map((p) => ({
     ...p,
     img: p.img ?? undefined,
-    colorCode: p.colorCode ?? undefined,
+    colorCode: p.color_code ?? undefined,
     gender: String(p.gender),
   }));
 

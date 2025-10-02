@@ -1,26 +1,21 @@
-// components/medical-history-container.tsx
+// components/MedicalHistoryContainer.tsx
 import db from "@/lib/db";
 import React from "react";
 import { MedicalHistory } from "./MedicalHistory";
 
-interface DataProps {
-  id?: number | string;
+interface MedicalHistoryContainerProps {
   patientId: string;
 }
 
-export const MedicalHistoryContainer = async ({ id, patientId }: DataProps) => {
-  const data = await db.medicalRecords.findMany({
+export const MedicalHistoryContainer = async ({ patientId }: MedicalHistoryContainerProps) => {
+  const records = await db.medicalRecords.findMany({
     where: { patient_id: patientId },
     include: {
       diagnosis: { include: { doctor: true } },
       lab_test: true,
     },
-
     orderBy: { created_at: "desc" },
   });
-  return (
-    <>
-      <MedicalHistory data={data} isShowProfile={false} />
-    </>
-  );
+
+  return <MedicalHistory data={records} isShowProfile={false} />;
 };

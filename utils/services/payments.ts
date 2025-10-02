@@ -43,7 +43,7 @@ export async function getPaymentRecords({
               last_name: true,
               date_of_birth: true,
               img: true,
-              colorCode: true,
+              color_code: true,
               gender: true,
             },
           },

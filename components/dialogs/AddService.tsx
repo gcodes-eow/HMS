@@ -58,7 +58,7 @@ export const AddService: React.FC<AddServiceProps> = ({ onServiceAdded }) => {
     <Dialog>
       <DialogTrigger asChild>
         <Button size="sm" className="text-sm font-normal flex items-center gap-2">
-          <Plus size={22} className="text-gray-500" /> Add New Service
+          <Plus size={22} className="text-gray-500" /> Add Service
         </Button>
       </DialogTrigger>
 

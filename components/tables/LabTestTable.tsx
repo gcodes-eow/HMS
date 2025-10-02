@@ -51,12 +51,17 @@ export const LabTestTable: React.FC<LabTestTableProps> = ({
     const patientName = `${item.medical_record.patient.first_name} ${item.medical_record.patient.last_name}`;
     const testName = item.services?.service_name ?? "";
 
+    const statusClasses = {
+      completed: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-400",
+      pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400",
+      default: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400",
+    };
+
     return (
       <tr
         key={item.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50"
+        className="border-b border-border even:bg-muted text-sm hover:bg-accent dark:border-border-dark dark:even:bg-muted-dark dark:hover:bg-accent-dark dark:text-foreground-dark"
       >
-        {/* Patient Info */}
         <td className="flex items-center gap-2 md:gap-4 py-2 xl:py-4">
           <ProfileImage
             url={item.medical_record.patient.img ?? undefined}
@@ -64,70 +69,46 @@ export const LabTestTable: React.FC<LabTestTableProps> = ({
             bgColor={item.medical_record.patient.colorCode ?? undefined}
           />
           <div>
-            <h3 className="font-semibold uppercase">{patientName}</h3>
+            <h3 className="font-semibold uppercase text-foreground dark:text-foreground-dark">{patientName}</h3>
             {item.medical_record.patient.gender && (
-              <span className="text-xs md:text-sm capitalize">
+              <span className="text-xs md:text-sm capitalize text-muted-foreground dark:text-muted-foreground-dark">
                 {item.medical_record.patient.gender.toLowerCase()}
               </span>
             )}
           </div>
         </td>
 
-        {/* Test */}
-        <td className="hidden md:table-cell">{testName}</td>
-
-        {/* Date */}
-        <td className="hidden md:table-cell">{formatDateSafe(item.test_date)}</td>
-
-        {/* Result */}
-        <td className="hidden xl:table-cell truncate max-w-[150px]">{item.result}</td>
-
-        {/* Status */}
+        <td className="hidden md:table-cell text-foreground dark:text-foreground-dark">{testName}</td>
+        <td className="hidden md:table-cell text-foreground dark:text-foreground-dark">{formatDateSafe(item.test_date)}</td>
+        <td className="hidden xl:table-cell truncate max-w-[150px] text-foreground dark:text-foreground-dark">{item.result}</td>
         <td className="hidden xl:table-cell">
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              item.status.toLowerCase() === "completed"
-                ? "bg-green-100 text-green-700"
-                : item.status.toLowerCase() === "pending"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
+          <span className={`px-2 py-1 text-xs rounded-full ${statusClasses[item.status.toLowerCase() as keyof typeof statusClasses] ?? statusClasses.default}`}>
             {item.status}
           </span>
         </td>
-
-        {/* Actions */}
         <td>
           {showActions && (
             <div className="flex items-center gap-2">
               <ViewLabTest
                 labTestId={item.id}
                 trigger={
-                  <Button className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600">
+                  <Button variant="primary" size="sm">
                     <Eye size={16} />
                   </Button>
                 }
               />
-
               <EditLabTest
                 labTestId={item.id}
                 services={item.services ? [item.services] : []}
                 onUpdated={onRefresh}
                 trigger={
-                  <Button className="w-7 h-7 flex items-center justify-center rounded-full bg-yellow-500 text-white hover:bg-yellow-600">
+                  <Button variant="warning" size="sm">
                     <Pencil size={16} />
                   </Button>
                 }
               />
-
-              <ActionDialog
-                type="delete"
-                id={String(item.id)}
-                deleteType="labTest"
-                onDeleted={onRefresh}
-              >
-                <Button className="w-7 h-7 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600">
+              <ActionDialog type="delete" id={String(item.id)} deleteType="labTest" onDeleted={onRefresh}>
+                <Button variant="destructive" size="sm">
                   <Trash2 size={16} />
                 </Button>
               </ActionDialog>

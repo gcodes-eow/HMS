@@ -1,4 +1,3 @@
-// components/tables/AppointmentTable.tsx
 import React from "react";
 import { Table } from "./Table";
 import { ProfileImage } from "../ProfileImage";
@@ -6,17 +5,13 @@ import { AppointmentStatusIndicator } from "../AppointmentStatusIndicator";
 import { ViewAppointment } from "../ViewAppointment";
 import { AppointmentActionOptions } from "../AppointmentActions";
 import { format } from "date-fns";
-import { Appointment, DashboardAppointment, AppointmentStatus } from "@/types/dataTypes";
-
-type AppointmentItem = Appointment | DashboardAppointment;
+import type { DashboardAppointment, AppointmentStatus } from "@/types/dataTypes";
 
 interface AppointmentTableProps {
-  data: AppointmentItem[];
+  data: DashboardAppointment[];
   userId?: string;
   isAdmin?: boolean;
   showActions?: boolean;
-  statusFilter?: AppointmentStatus;
-  sortOrder?: "newest" | "oldest";
 }
 
 const columns = [
@@ -33,8 +28,6 @@ export const AppointmentTable: React.FC<AppointmentTableProps> = ({
   userId,
   isAdmin = false,
   showActions = true,
-  statusFilter,
-  sortOrder,
 }) => {
   const formatDateSafe = (dateValue?: string | Date) => {
     if (!dateValue) return "";
@@ -42,19 +35,7 @@ export const AppointmentTable: React.FC<AppointmentTableProps> = ({
     return isNaN(date.getTime()) ? "" : format(date, "yyyy-MM-dd");
   };
 
-  let filteredData = statusFilter
-    ? data.filter((item) => item.status === statusFilter)
-    : data;
-
-  if (sortOrder) {
-    filteredData = [...filteredData].sort((a, b) => {
-      const dateA = new Date(a.appointment_date).getTime();
-      const dateB = new Date(b.appointment_date).getTime();
-      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-    });
-  }
-
-  const renderRow = (item: AppointmentItem) => {
+  const renderRow = (item: DashboardAppointment) => {
     const patientName = `${item.patient.first_name} ${item.patient.last_name}`;
     const doctorName = item.doctor?.name ?? "";
     const doctorSpecialization = item.doctor?.specialization ?? "";
@@ -62,9 +43,8 @@ export const AppointmentTable: React.FC<AppointmentTableProps> = ({
     return (
       <tr
         key={item.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50"
+        className="border-b border-border even:bg-muted text-sm hover:bg-accent dark:border-border-dark dark:even:bg-muted-dark dark:hover:bg-accent-dark"
       >
-        {/* Patient Info */}
         <td className="flex items-center gap-2 md:gap-4 py-2 xl:py-4">
           <ProfileImage
             url={item.patient.img ?? undefined}
@@ -72,46 +52,42 @@ export const AppointmentTable: React.FC<AppointmentTableProps> = ({
             bgColor={item.patient.colorCode ?? undefined}
           />
           <div>
-            <h3 className="font-semibold uppercase">{patientName}</h3>
-            <span className="text-xs md:text-sm capitalize">
+            <h3 className="font-semibold uppercase text-foreground dark:text-foreground-dark">{patientName}</h3>
+            <span className="text-xs md:text-sm capitalize text-muted-foreground dark:text-muted-foreground-dark">
               {item.patient.gender.toLowerCase()}
             </span>
           </div>
         </td>
 
-        {/* Date & Time */}
-        <td className="hidden md:table-cell">{formatDateSafe(item.appointment_date)}</td>
-        <td className="hidden md:table-cell">{item.time ?? ""}</td>
+        <td className="hidden md:table-cell text-foreground dark:text-foreground-dark">{formatDateSafe(item.appointment_date)}</td>
+        <td className="hidden md:table-cell text-foreground dark:text-foreground-dark">{item.time}</td>
 
-        {/* Doctor Info */}
-        <td className="hidden md:table-cell flex items-center gap-2 md:gap-4 py-2">
+        <td className="hidden md:flex items-center gap-2 md:gap-4 py-2">
           <ProfileImage
             url={item.doctor?.img ?? undefined}
             name={doctorName}
             bgColor={item.doctor?.colorCode ?? undefined}
-            textClassName="text-black"
+            textClassName="text-foreground dark:text-foreground-dark"
           />
           <div>
-            <h3 className="font-semibold uppercase">{doctorName}</h3>
-            <span className="text-xs md:text-sm capitalize">{doctorSpecialization}</span>
+            <h3 className="font-semibold uppercase text-foreground dark:text-foreground-dark">{doctorName}</h3>
+            <span className="text-xs md:text-sm capitalize text-muted-foreground dark:text-muted-foreground-dark">{doctorSpecialization}</span>
           </div>
         </td>
 
-        {/* Status */}
         <td className="hidden xl:table-cell">
-          <AppointmentStatusIndicator status={item.status} />
+          <AppointmentStatusIndicator status={item.status as AppointmentStatus} />
         </td>
 
-        {/* Actions */}
         <td>
           {showActions && userId && (
             <div className="flex items-center gap-2">
               <ViewAppointment id={item.id.toString()} />
               <AppointmentActionOptions
                 userId={userId}
-                patientId={item.patient_id ?? ""}
-                doctorId={item.doctor_id ?? ""}
-                status={item.status}
+                patientId={item.patient_id}
+                doctorId={item.doctor_id}
+                status={item.status as AppointmentStatus}
                 appointmentId={item.id}
                 isAdmin={isAdmin}
               />
@@ -122,5 +98,5 @@ export const AppointmentTable: React.FC<AppointmentTableProps> = ({
     );
   };
 
-  return <Table columns={columns} renderRow={renderRow} data={filteredData} />;
+  return <Table columns={columns} renderRow={renderRow} data={data} />;
 };

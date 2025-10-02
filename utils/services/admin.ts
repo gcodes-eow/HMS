@@ -54,7 +54,7 @@ export async function getAdminDashboardStats(): Promise<
                 last_name: true,
                 gender: true,
                 img: true,
-                colorCode: true,
+                color_code: true,
               },
             },
             doctor: {
@@ -63,7 +63,7 @@ export async function getAdminDashboardStats(): Promise<
                 name: true,
                 specialization: true,
                 img: true,
-                colorCode: true,
+                color_code: true,
               },
             },
           },
@@ -80,7 +80,7 @@ export async function getAdminDashboardStats(): Promise<
             name: true,
             specialization: true,
             img: true,
-            colorCode: true,
+            color_code: true,
             working_days: true,
           },
           take: 5,
@@ -105,12 +105,12 @@ export async function getAdminDashboardStats(): Promise<
         patient: {
           ...a.patient,
           img: a.patient.img ?? undefined,
-          colorCode: a.patient.colorCode ?? undefined,
+          colorCode: a.patient.color_code ?? undefined,
         },
         doctor: {
           ...a.doctor,
           img: a.doctor.img ?? undefined,
-          colorCode: a.doctor.colorCode ?? undefined,
+          colorCode: a.doctor.color_code ?? undefined,
         },
       })
     );
@@ -119,7 +119,7 @@ export async function getAdminDashboardStats(): Promise<
       (d: DoctorRaw) => ({
         ...d,
         img: d.img ?? undefined,
-        colorCode: d.colorCode ?? undefined,
+        color_code: d.color_code ?? undefined,
         working_days: d.working_days.map((w: WorkingDayRaw) => ({
           day: w.day,
           start_time: w.start_time,

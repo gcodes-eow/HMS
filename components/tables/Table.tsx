@@ -47,10 +47,10 @@ export function Table<T extends { id?: string | number }>({
   });
 
   return (
-    <table className="w-full mt-4 border-collapse">
+    <table className="w-full mt-4 border-collapse bg-card text-card-foreground">
       {/* Desktop header */}
-      <thead className="bg-gray-100 hidden md:table-header-group">
-        <tr className="text-left text-gray-500 text-sm lg:uppercase">
+      <thead className="hidden md:table-header-group bg-muted text-muted-foreground">
+        <tr className="text-left text-sm lg:uppercase">
           {columns.map(({ header, key, className }) => (
             <th key={key} className={`p-2 ${className ?? ""}`}>
               {header}
@@ -65,7 +65,7 @@ export function Table<T extends { id?: string | number }>({
           <tr>
             <td
               colSpan={columns.length}
-              className="text-gray-400 text-base py-10 text-center"
+              className="text-muted-foreground text-base py-10 text-center"
             >
               Loading...
             </td>
@@ -77,7 +77,7 @@ export function Table<T extends { id?: string | number }>({
           <tr>
             <td
               colSpan={columns.length}
-              className="text-gray-400 text-base py-10 text-center"
+              className="text-muted-foreground text-base py-10 text-center"
             >
               No Data Found
             </td>
@@ -102,11 +102,18 @@ export function Table<T extends { id?: string | number }>({
                         </tbody>
                       </table>
                     ) : (
-                      <div className="flex flex-col gap-1 text-sm text-gray-700">
+                      <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-3 text-sm">
                         {columns.map((col) => (
-                          <div key={col.key} className="flex justify-between">
-                            <span className="font-medium">{col.header}:</span>
-                            <span>{String((item as any)[col.key] ?? "")}</span>
+                          <div
+                            key={col.key}
+                            className="flex justify-between gap-2 border-b last:border-0 py-1"
+                          >
+                            <span className="font-medium text-muted-foreground">
+                              {col.header}
+                            </span>
+                            <span className="text-foreground">
+                              {String((item as any)[col.key] ?? "-")}
+                            </span>
                           </div>
                         ))}
                       </div>

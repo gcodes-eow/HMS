@@ -3,7 +3,7 @@ import { ActionDialog } from "@/components/ActionDialog";
 import { ViewAction } from "@/components/ActionOptions";
 import { Pagination } from "@/components/Pagination";
 import { ProfileImage } from "@/components/ProfileImage";
-import SearchInput from "@/components/appointment/SearchInput";
+import SearchInput from "@/components/SearchInput";
 import { Table } from "@/components/tables/Table";
 import { Button } from "@/components/ui/Button";
 import { SearchParamsProps } from "@/types";

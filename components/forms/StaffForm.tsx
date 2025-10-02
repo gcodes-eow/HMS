@@ -28,6 +28,7 @@ const TYPES = [
   { label: "Cashier", value: "CASHIER" },
   { label: "Pharmacist", value: "PHARMACIST" },
   { label: "Lab Technician", value: "LABORATORY" },
+  { label: "Manager", value: "MANAGER" },
 ];
 
 export const StaffForm = () => {

@@ -1,4 +1,4 @@
-import { getVitalSignData } from "@/utils/services/medical";
+import { getVitalSignData } from "@/utils/services/medicalServices";
 import BloodPressureChart from "./BloodPressureChart";
 import { HeartRateChart } from "./HeartRateChart";
 

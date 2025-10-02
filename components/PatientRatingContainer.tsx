@@ -1,48 +1,58 @@
 // components/PatientRatingContainer.tsx
-import { auth } from "@clerk/nextjs/server";
 import db from "@/lib/db";
-import { RatingList } from "./RatingList";
 import React from "react";
+import { RatingList } from "./RatingList";
 
-// Accept patientId as prop to fetch the ratings data
-interface PatientRatingContainerProps {
-  patientId: string; // Use patientId to fetch data
-  data: any[]; // Ratings data passed from getServerSideProps
+export interface Rating {
+  id: string; // keep as string for frontend consistency
+  rating: number;
+  comment?: string | null;
+  created_at: Date;
+  patient: { first_name: string; last_name: string };
 }
 
-// Server-Side Fetching for Patient Ratings
-export async function getServerSideProps(context: { params: { patientId: string } }) {
-  const { patientId } = context.params;
+interface PatientRatingContainerProps {
+  entityId: string;              // can be patientId or doctorId
+  entityType?: "patient" | "doctor"; // default is "patient"
+}
 
-  const { userId } = await auth();
+const PatientRatingContainer = async ({
+  entityId,
+  entityType = "patient",
+}: PatientRatingContainerProps) => {
+  const whereClause =
+    entityType === "patient"
+      ? { patient_id: entityId }
+      : { doctor_id: entityId };
 
-  // Fetch ratings data for the given patient
-  const data = await db.rating.findMany({
-    where: { patient_id: patientId || userId! },
-    include: { patient: { select: { last_name: true, first_name: true } } },
+  const dataFromDb = await db.rating.findMany({
+    where: whereClause,
+    include: { patient: { select: { first_name: true, last_name: true } } },
     orderBy: { created_at: "desc" },
     take: 10,
   });
 
-  if (!data) {
-    return { notFound: true }; // Optional: Return 404 if no ratings found
+  if (!dataFromDb.length) {
+    return (
+      <div className="bg-white p-4 rounded-md text-gray-500 text-center">
+        No reviews available
+      </div>
+    );
   }
 
-  return {
-    props: {
-      patientId,
-      data,
-    },
-  };
-}
-
-const PatientRatingContainer = ({ data }: PatientRatingContainerProps) => {
-  if (!data.length) return <div>No reviews available</div>;
+  // Convert Prisma results to frontend Rating type
+  const data: Rating[] = dataFromDb.map(r => ({
+    ...r,
+    id: r.id.toString(),          // convert number to string
+  }));
 
   return (
-    <div>
-      <RatingList data={data} />
-    </div>
+    <RatingList
+      data={data.map(r => ({
+        ...r,
+        createdAt: r.created_at.toISOString(), // convert Date to string for RatingList
+      }))}
+    />
   );
 };
 

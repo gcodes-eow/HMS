@@ -71,7 +71,7 @@ export async function getReceptionistDashboardStatistics() {
             name: true,
             img: true,
             specialization: true,
-            colorCode: true,
+            color_code: true,
           },
         },
         patient: {
@@ -81,7 +81,7 @@ export async function getReceptionistDashboardStatistics() {
             gender: true,
             date_of_birth: true,
             img: true,
-            colorCode: true,
+            color_code: true,
           },
         },
       },
@@ -99,7 +99,7 @@ export async function getReceptionistDashboardStatistics() {
         specialization: true,
         img: true,
         working_days: true,
-        colorCode: true,
+        color_code: true,
       },
       where: {
         working_days: {

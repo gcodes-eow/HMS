@@ -15,59 +15,63 @@ import { MdEmail, MdLocalPhone } from "react-icons/md";
 const DoctorProfile = async ({ params }: { params: { id: string } }) => {
   const doctorId = params.id;
 
-  // Fetching doctor data and total patient/appointment count directly on the server-side
+  // Fetch doctor data
   const { data } = await getDoctorById(doctorId);
 
   if (!data) return <div>Doctor not found.</div>;
 
-  const totalAppointment = data.appointments ? data.appointments.length : 0; // Count the appointments
+  const totalAppointment = data.appointments.length;
 
   return (
     <div className="bg-gray-100/60 h-full rounded-xl py-6 px-3 2xl:px-5 flex flex-col lg:flex-row gap-6">
+      {/* Left Column */}
       <div className="w-full lg:w-[70%]">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="bg-blue-50 py-6 px-4 rounded-md flex-1 flex gap-4">
             <ProfileImage
-              url={data?.img!}
-              name={data?.name}
+              url={data.img!}
+              name={data.name}
               className="size-20"
-              bgColor={data?.colorCode!}
+              bgColor={data.colorCode!}
               textClassName="text-4xl text-black"
             />
 
             <div className="w-2/3 flex flex-col justify-between gap-x-4">
               <div className="flex items-center gap-4">
-                <h1 className="text=xl font-semibold uppercase">{data?.name}</h1>
+                <h1 className="text-xl font-semibold uppercase">{data.name}</h1>
               </div>
-              <p className="text-sm text-gray-500">{data?.address || "No address information"}</p>
+              <p className="text-sm text-gray-500">{data.address}</p>
 
               <div className="mt-4 flex items-center justify-between gap-2 flex-wrap text-sm font-medium">
                 <div className="w-full flex text-base">
                   <span>License #:</span>
-                  <p className="font-semibold">{data?.license_number}</p>
+                  <p className="font-semibold">{data.license_number}</p>
                 </div>
 
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <FaBriefcaseMedical className="text-lg" />
-                  <span className="capitalize">{data?.specialization}</span>
+                  <span className="capitalize">{data.specialization}</span>
                 </div>
+
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <BsPersonWorkspace className="text-lg" />
-                  <span className="capitalize">{data?.type}</span>
+                  <span className="capitalize">{data.type}</span>
                 </div>
+
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <MdEmail className="text-lg" />
-                  <span className="capitalize">{data?.email}</span>
+                  <span className="capitalize">{data.email}</span>
                 </div>
+
                 <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
                   <MdLocalPhone className="text-lg" />
-                  <span className="capitalize">{data?.phone}</span>
+                  <span className="capitalize">{data.phone}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* SATS */}
+          {/* Stats */}
           <div className="flex-1 flex gap-4 justify-between flex-wrap">
             <div className="doctorCard">
               <FaBriefcaseMedical className="size-5" />
@@ -79,7 +83,7 @@ const DoctorProfile = async ({ params }: { params: { id: string } }) => {
             <div className="doctorCard">
               <FaCalendarDays className="size-5" />
               <div>
-                <h1 className="text-xl font-serif">{data?.working_days?.length}</h1>
+                <h1 className="text-xl font-serif">{data.working_days.length}</h1>
                 <span className="text-sm text-gray-500">Working Days</span>
               </div>
             </div>
@@ -94,26 +98,26 @@ const DoctorProfile = async ({ params }: { params: { id: string } }) => {
             <div className="doctorCard">
               <BsCalendarDateFill className="size-5" />
               <div>
-                <h1 className="text-xl font-serif">{format(data?.created_at, "yyyy-MM-dd")}</h1>
+                <h1 className="text-xl font-serif">{format(data.created_at, "yyyy-MM-dd")}</h1>
                 <span className="text-sm text-gray-500">Joined Date</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent appointment */}
+        {/* Recent Appointments */}
         <div className="bg-white rounded-e-xl p-4 mt-6">
-          <RecentAppointments data={data?.appointments} />
+          <RecentAppointments data={data.appointments} />
         </div>
       </div>
 
-      {/* RIGHT SIDE */}
+      {/* Right Sidebar */}
       <div className="w-full lg:w-[30%] flex flex-col gap-4">
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Quick Links</h1>
           <div className="mt-8 flex gap-4 flex-wrap text-sm text-gray-500">
             <Link
-              href={`/record/appointments?id=${data?.id}`}
+              href={`/record/appointments?id=${data.id}`}
               className="p-3 rounded-md bg-yellow-60 hover:underline"
             >
               Doctor Appointments
@@ -125,9 +129,8 @@ const DoctorProfile = async ({ params }: { params: { id: string } }) => {
           </div>
         </div>
 
-        {/* Using PatientRatingContainer */}
-        {/* Here, passing the full doctor data as prop */}
-        <PatientRatingContainer patientId={data?.id} data={[]} />
+        {/* Ratings */}
+        <PatientRatingContainer entityId={data.id} entityType="doctor" />
       </div>
     </div>
   );

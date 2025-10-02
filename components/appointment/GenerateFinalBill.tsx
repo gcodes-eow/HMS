@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { generateBill } from "@/app/actions/medical";
+import { generateBill } from "@/app/actions/medicalServices";
 import { PaymentSchema } from "@/lib/schema";
 import { z } from "zod";
 import { CustomInput } from "../CustomInput";

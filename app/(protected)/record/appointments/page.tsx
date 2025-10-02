@@ -1,232 +1,127 @@
 // app/(protected)/record/appointments/page.tsx
-import { AppointmentActionOptions } from "@/components/AppointmentActions";
-import { AppointmentStatusIndicator } from "@/components/AppointmentStatusIndicator";
-import { ProfileImage } from "@/components/ProfileImage";
-import { Table } from "@/components/tables/Table";
-import { ViewAppointment } from "@/components/ViewAppointment";
-import { getRole } from "@/utils/roles";
-import { DATA_LIMIT } from "@/utils/settings";
-import { getPatientAppointments } from "@/utils/services/appointment";
-import { getDoctors } from "@/utils/services/doctor";
-import { getPatientFullDataById } from "@/utils/services/patient";
-import { auth } from "@clerk/nextjs/server";
-import {
-  Appointment,
-  Doctor,
-  Patient,
-  AppointmentStatus,
-} from "@prisma/client";
-import { format } from "date-fns";
-import { BriefcaseBusiness } from "lucide-react";
-import React from "react";
-import { Pagination } from "@/components/Pagination";
 import { AppointmentContainer } from "@/components/AppointmentContainer";
 import { AppointmentListToolbar } from "@/components/filters/AppointmentListToolbar";
-import type {
-  FullPatientData,
-  ServiceResponse,
-} from "@/utils/services/patient";
+import { AppointmentTable } from "@/components/tables/AppointmentTable";
+import { Pagination } from "@/components/Pagination";
+import { getRole } from "@/utils/roles";
+import { auth } from "@clerk/nextjs/server";
+import { getPatientFullDataById, ServiceResponse } from "@/utils/services/patient";
+import { getPatientAppointments } from "@/utils/services/appointment";
+import { getDoctors } from "@/utils/services/doctor";
+import { getAllPatients } from "@/app/actions/patient";
+import { Doctor, AppointmentStatus } from "@prisma/client";
+import React from "react";
 
-// Table columns
-const columns = [
-  { header: "Info", key: "name" },
-  {
-    header: "Date",
-    key: "appointment_date",
-    className: "hidden md:table-cell",
-  },
-  { header: "Time", key: "time", className: "hidden md:table-cell" },
-  { header: "Doctor", key: "doctor", className: "hidden md:table-cell" },
-  { header: "Status", key: "status", className: "hidden xl:table-cell" },
-  { header: "Actions", key: "action" },
-];
+import type { FullPatientData, AppointmentWithRelations, DashboardAppointment, Patient } from "@/types/dataTypes";
 
-interface DataProps extends Appointment {
-  patient: Patient;
-  doctor: Doctor;
-}
+type RowData = AppointmentWithRelations | DashboardAppointment;
 
-const formatDateSafe = (dateValue?: string | Date) => {
-  if (!dateValue) return "";
-  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-  return isNaN(date.getTime()) ? "" : format(date, "yyyy-MM-dd");
-};
+// Normalize helpers
+const normalizePatient = (p: any): Patient => ({
+  ...p,
+  email: p.email ?? undefined,
+  img: p.img ?? undefined,
+  colorCode: p.colorCode ?? undefined,
+});
 
-const AppointmentTable = async ({
-  searchParams,
-  role,
-  userId,
-}: {
-  searchParams?: { [key: string]: string | undefined };
-  role: string;
-  userId: string;
-}) => {
-  const page = searchParams?.p || "1";
-  const query = searchParams?.q || "";
-  const status = (searchParams?.status as AppointmentStatus) || undefined;
-  const paramId = searchParams?.id;
+const normalizeDoctor = (d: any) => ({
+  ...d,
+  img: d.img ?? undefined,
+  colorCode: d.colorCode ?? undefined,
+});
 
-  const queryId = role === "admin" || role === "nurse" ? paramId : userId;
+const AppointmentsPage = async ({ searchParams }: { searchParams?: any }) => {
+  const resolvedSearchParams = await searchParams;
 
-  const response = await getPatientAppointments({
-    page,
+  const [role, { userId }] = await Promise.all([getRole(), auth()]);
+  const isPatient = role === "user";
+
+  // Fetch doctors
+  const doctorsResponse: ServiceResponse<Doctor[]> = await getDoctors();
+  const normalizedDoctors: Doctor[] = (doctorsResponse.data ?? []).map(normalizeDoctor);
+
+  // Fetch all patients for admin/staff
+  const allPatientsResponse = !isPatient ? await getAllPatients() : undefined;
+  const allPatients: Patient[] = (allPatientsResponse?.data ?? []).map(normalizePatient);
+
+  // Fetch patient if needed
+  const patientResponse: ServiceResponse<FullPatientData> | undefined = isPatient
+    ? await getPatientFullDataById(userId!)
+    : resolvedSearchParams?.id
+    ? await getPatientFullDataById(resolvedSearchParams.id)
+    : undefined;
+
+  const page = parseInt(resolvedSearchParams?.p || "1", 10);
+  const query = resolvedSearchParams?.q || "";
+  const status = (resolvedSearchParams?.status as AppointmentStatus) || undefined;
+  const queryId = isPatient ? userId : resolvedSearchParams?.id;
+
+  // Fetch appointments
+  const appointmentsResponse = await getPatientAppointments({
+    page: page.toString(),
     search: query,
     status,
     id: queryId ?? "",
   });
 
-  if (!response.success || !response.data || response.data.length === 0) {
-    return <p className="text-center py-4">No appointments found.</p>;
-  }
+  // Normalize appointment data
+  const data: RowData[] = (appointmentsResponse.data ?? []).map((appt) => ({
+    ...appt,
+    patient: normalizePatient(appt.patient),
+    doctor: normalizeDoctor(appt.doctor),
+  }));
 
-  const { data, totalPages, totalRecords, currentPage } = response;
+  const totalAppointments = isPatient
+    ? patientResponse?.data?.totalAppointments ?? 0
+    : appointmentsResponse.totalRecords ?? 0;
 
-  const renderRow = (item: DataProps) => {
-    const patientName = `${item.patient.first_name} ${item.patient.last_name}`;
-    return (
-      <tr
-        key={item.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50"
-      >
-        <td className="flex items-center gap-2 md:gap-4 py-2 xl:py-4">
-          <ProfileImage
-            url={item.patient.img ?? undefined}
-            name={patientName}
-            bgColor={item.patient.colorCode ?? undefined}
-          />
-          <div>
-            <h3 className="font-semibold uppercase">{patientName}</h3>
-            <span className="text-xs md:text-sm capitalize">
-              {item.patient.gender.toLowerCase()}
-            </span>
-          </div>
-        </td>
-        <td className="hidden md:table-cell">
-          {formatDateSafe(item.appointment_date)}
-        </td>
-        <td className="hidden md:table-cell">{item.time ?? ""}</td>
-        <td className="hidden md:table-cell items-center py-2">
-          <div className="flex items-center gap-2 md:gap-4">
-            <ProfileImage
-              url={item.doctor?.img ?? undefined}
-              name={item.doctor?.name}
-              bgColor={item.doctor?.colorCode ?? undefined}
-              textClassName="text-black"
-            />
-            <div>
-              <h3 className="font-semibold uppercase">
-                {item.doctor?.name ?? ""}
-              </h3>
-              <span className="text-xs md:text-sm capitalize">
-                {item.doctor?.specialization ?? ""}
-              </span>
-            </div>
-          </div>
-        </td>
-        <td className="hidden xl:table-cell">
-          <AppointmentStatusIndicator status={item.status} />
-        </td>
-        <td>
-          <div className="flex items-center gap-2">
-            <ViewAppointment id={item.id.toString()} />
-            <AppointmentActionOptions
-              userId={userId}
-              patientId={item.patient_id ?? undefined}
-              doctorId={item.doctor_id ?? undefined}
-              status={item.status}
-              appointmentId={item.id}
-              isAdmin={role === "admin"} // ✅ added
-            />
-          </div>
-        </td>
-      </tr>
-    );
-  };
-
-  return (
-    <div>
-      <Table columns={columns} renderRow={renderRow} data={data} />
-      <Pagination
-        totalRecords={totalRecords ?? 0}
-        currentPage={currentPage ?? 0}
-        totalPages={totalPages ?? 0}
-        limit={DATA_LIMIT}
-      />
-    </div>
-  );
-};
-
-const AppointmentsPage = async ({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | undefined };
-}) => {
-  const [role, { userId }] = await Promise.all([getRole(), auth()]);
-  const isPatient = role === "user";
-
-  // ✅ both responses are ServiceResponse<T>
-  const doctorsResponse: ServiceResponse<Doctor[]> = await getDoctors();
-  const patientResponse: ServiceResponse<FullPatientData> | undefined = isPatient
-    ? await getPatientFullDataById(userId ?? "")
-    : searchParams?.id
-    ? await getPatientFullDataById(searchParams.id)
-    : undefined;
-
-  // ✅ total appointments depends on role
-  let totalAppointments = 0;
-  if (isPatient) {
-    totalAppointments = patientResponse?.data?.totalAppointments ?? 0;
-  } else {
-    const appointmentsForAdmin = await getPatientAppointments({
-      page: searchParams?.p || "1",
-      search: searchParams?.q || "",
-      status: (searchParams?.status as AppointmentStatus) || undefined,
-      id: searchParams?.id ?? "",
-    });
-
-    totalAppointments = appointmentsForAdmin.totalRecords ?? 0;
-  }
+  // Extract patients from appointments for patient view
+  const patientsFromAppointments: Patient[] =
+    (appointmentsResponse.data ?? []).map((appt) => normalizePatient(appt.patient));
 
   return (
     <div className="bg-white rounded-xl p-2 md:p-4 2xl:p-6">
+      {/* Toolbar & Book Appointment */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
           <div className="hidden lg:flex items-center gap-1">
-            <BriefcaseBusiness size={20} className="text-gray-500" />
             <span className="text-2xl font-semibold">{totalAppointments}</span>
-            <span className="text-gray-600 text-sm xl:text-base">
-              total appointments
-            </span>
+            <span className="text-gray-600 text-sm xl:text-base">total appointments</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center w-full lg:w-fit">
-          {isPatient && patientResponse?.success && (
-            <AppointmentContainer id={userId!} />
-          )}
-          <AppointmentListToolbar
-            searchParamKey="q"
-            filterParamKey="status"
-            filterPlaceholder="Filter by status"
-            sortParamKey="sort"
-            sortOptions={[
-              { value: "newest", label: "Newest First" },
-              { value: "oldest", label: "Oldest First" },
-            ]}
-            patientResponse={patientResponse}
-            doctorsResponse={doctorsResponse}
-            role={role}
-          />
-        </div>
+        <AppointmentListToolbar
+          searchParamKey="q"
+          filterParamKey="status"
+          filterPlaceholder="Filter by status"
+          sortParamKey="sort"
+          sortOptions={[
+            { value: "newest", label: "Newest First" },
+            { value: "oldest", label: "Oldest First" },
+          ]}
+          patient={isPatient ? patientResponse?.data ?? undefined : undefined}
+          patients={!isPatient ? allPatients : []}
+          doctors={normalizedDoctors}
+          role={role}
+        />
+
+        {isPatient && patientResponse?.success && (
+          <AppointmentContainer id={userId!} patients={patientsFromAppointments} />
+        )}
       </div>
 
+      {/* Appointment Table */}
       <div className="mt-6">
-        <AppointmentTable
-          searchParams={searchParams}
-          role={role}
-          userId={userId!}
-        />
+        <AppointmentTable data={data} userId={userId!} isAdmin={role === "admin"} />
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        totalRecords={appointmentsResponse.totalRecords ?? 0}
+        currentPage={appointmentsResponse.currentPage ?? page}
+        totalPages={appointmentsResponse.totalPages ?? 1}
+        limit={appointmentsResponse.limit ?? 10}
+      />
     </div>
   );
 };

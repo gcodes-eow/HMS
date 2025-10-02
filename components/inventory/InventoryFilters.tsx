@@ -1,4 +1,4 @@
-// components/inventory/inventory-filters.tsx
+// components/inventory/InventoryFilters.tsx
 "use client";
 
 import { useState, useEffect } from "react";

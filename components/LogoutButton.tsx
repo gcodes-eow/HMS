@@ -1,4 +1,4 @@
-// components/logout-button.tsx
+// components/LogoutButton.tsx
 "use client";
 
 import React from "react";
@@ -11,7 +11,7 @@ export const LogoutButton = () => {
   return (
     <Button
       variant={"outline"}
-      className="w-fit bottom-0 gap-2 px-0 md:px-4"
+      className="w-fit bottom-0 gap-2 px-0 md:px-4 text-foreground dark:text-foreground-dark"
       onClick={() => signOut({ redirectUrl: "/sign-in" })}
     >
       <LogOut />

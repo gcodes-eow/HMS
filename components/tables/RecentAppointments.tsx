@@ -1,39 +1,33 @@
-// components/tables/RecentAppointments.tsx
 import Link from "next/link";
 import React from "react";
 import { Button } from "../ui/Button";
 import { AppointmentTable } from "./AppointmentTable";
-import { Appointment, DashboardAppointment } from "@/types/dataTypes";
+import type { DashboardAppointment } from "@/types/dataTypes";
 
 interface RecentAppointmentsProps {
-  data?: Appointment[] | DashboardAppointment[]; // make optional
+  data?: DashboardAppointment[];
 }
 
 const RecentAppointments: React.FC<RecentAppointmentsProps> = ({ data }) => {
-  // fallback to empty array if data is undefined or null
-  const safeData = Array.isArray(data) ? data : [];
-
-  // Normalize for AppointmentTable
-  const normalizedData: Appointment[] = safeData.map((appt) => ({
-    ...appt,
-    type: appt.type ?? "GENERAL", // fallback if type is missing
-    patient: appt.patient || { first_name: "-", last_name: "-" },
-    doctor: appt.doctor || { name: "-", specialization: "-" },
-  }));
+  const safeData = data ?? [];
 
   return (
-    <div className="bg-white rounded-xl p-4">
+    <div className="bg-card rounded-xl p-4 dark:bg-card-dark">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-lg font-semibold">Recent Appointments</h1>
+        <h1 className="text-lg font-semibold text-foreground dark:text-foreground-dark">
+          Recent Appointments
+        </h1>
         <Button asChild variant="outline">
           <Link href="/record/appointments">View All</Link>
         </Button>
       </div>
 
-      {normalizedData.length > 0 ? (
-        <AppointmentTable data={normalizedData} showActions={false} />
+      {safeData.length > 0 ? (
+        <AppointmentTable data={safeData} showActions={false} />
       ) : (
-        <p className="text-gray-500 text-sm">No recent appointments found.</p>
+        <p className="text-muted-foreground dark:text-muted-foreground-dark text-sm">
+          No recent appointments found.
+        </p>
       )}
     </div>
   );

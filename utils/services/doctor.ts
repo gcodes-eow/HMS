@@ -3,194 +3,124 @@ import db from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { daysOfWeek } from "..";
 import { processAppointments } from "./patient";
+import type { DashboardAppointment } from "@/types/dataTypes";
+import type { Doctor, ServiceResponse } from "@/types/dataTypes";
 
-// ✅ Enums & runtime types from Prisma
-import { Gender, AppointmentStatus } from "@prisma/client";
-
-// ✅ Shared structural types only from dataTypes
-import {
-  DashboardAppointment as SharedDashboardAppointment,
-  Rating as SharedRating,
-  Doctor as SharedDoctor,
-  Rating as SharedRatingType,
-} from "@/types/dataTypes";
-
-
-// ---------------------------
-// Types
-// ---------------------------
-export interface ServiceResponse<T> {
-  success: boolean;
-  error: boolean;
-  status: number;
-  message?: string;
-  data?: T | null;
-  totalPages?: number;
-  currentPage?: number;
-  totalRecords?: number;
-}
-
-// Doctor type with relations manually typed
-export type DoctorWithRelations = SharedDoctor & {
-  working_days?: { day: string; start_time: string; close_time: string }[];
-  appointments?: SharedDashboardAppointment[];
-};
-
-// Appointment type with patient + doctor relations
-export type AppointmentWithRelations = SharedDashboardAppointment & {
-  hasConflict?: boolean;
-  doctorConflict?: boolean;
-};
-
-// Rating type with patient info
-export type RatingWithPatient = SharedRatingType & {
-  patient: { first_name: string; last_name: string };
-};
-
-// Rating summary type
-export interface RatingData {
-  ratings: SharedRating[] | RatingWithPatient[];
-  totalRatings: number;
-  averageRating: string;
-}
-
-// ---------------------------
-// Normalization Helpers
-// ---------------------------
-function normalizeDoctorAppointment(a: any): SharedDashboardAppointment {
-  return {
-    id: a.id, // keep as number to match Prisma
-    appointment_date: a.appointment_date,
-    time: new Date(a.appointment_date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    status: a.status as AppointmentStatus,
-    type: a.type ?? "GENERAL",
-    doctor_id: a.doctor_id,
-    patient_id: a.patient_id,
-    doctor: {
-      ...a.doctor,
-      img: a.doctor.img ?? undefined,
-      colorCode: a.doctor.colorCode ?? undefined,
-    },
-    patient: {
-      ...a.patient,
-      gender: a.patient.gender as Gender,
-      img: a.patient.img ?? undefined,
-      colorCode: a.patient.colorCode ?? undefined,
-    },
-  };
-}
-
-function normalizeDoctor(d: any): DoctorWithRelations {
-  return {
-    ...d,
-    img: d.img ?? undefined,
-    colorCode: d.colorCode ?? undefined,
-    appointments: d.appointments?.map(normalizeDoctorAppointment),
-  };
-}
-
-// ---------------------------
-// Doctor Services
-// ---------------------------
-export async function getDoctors(): Promise<ServiceResponse<DoctorWithRelations[]>> {
+export async function getDoctors(): Promise<ServiceResponse<Doctor[]>> {
   try {
-    const data = await db.doctor.findMany({
-      include: { working_days: true, appointments: { include: { patient: true, doctor: true } } },
+    const doctors = await db.doctor.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        specialization: true,
+        license_number: true,
+        phone: true,
+        address: true,
+        department: true,
+        img: true,
+        color_code: true,
+        availability_status: true,
+        type: true,
+        created_at: true,
+        updated_at: true,
+      },
     });
 
-    const normalizedDoctors = data.map(normalizeDoctor);
-
-    return { success: true, error: false, data: normalizedDoctors, status: 200 };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
-  }
-}
-
-export async function getDoctorById(
-  id: string
-): Promise<ServiceResponse<DoctorWithRelations & { totalAppointment: number }>> {
-  try {
-    const [doctor, totalAppointment] = await Promise.all([
-      db.doctor.findUnique({
-        where: { id },
-        include: {
-          working_days: true,
-          appointments: {
-            include: {
-              patient: {
-                select: { id: true, first_name: true, last_name: true, gender: true, img: true, colorCode: true },
-              },
-              doctor: { select: { id: true, name: true, specialization: true, img: true, colorCode: true } },
-            },
-            orderBy: { appointment_date: "desc" },
-            take: 10,
-          },
-        },
-      }),
-      db.appointment.count({ where: { doctor_id: id } }),
-    ]);
-
-    if (!doctor) return { success: false, error: true, message: "Doctor not found", status: 404, data: null };
-
-    const normalizedAppointments: SharedDashboardAppointment[] = doctor.appointments?.map(normalizeDoctorAppointment);
+    const normalized: Doctor[] = doctors.map((d) => ({
+      ...d,
+      img: d.img ?? null,
+      colorCode: d.color_code ?? null,
+      department: d.department ?? null,
+    }));
 
     return {
       success: true,
       error: false,
       status: 200,
-      data: { ...normalizeDoctor(doctor), appointments: normalizedAppointments, totalAppointment },
+      data: normalized, // never undefined
+      totalRecords: normalized.length,
     };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
+  } catch (error: any) {
+    console.error("Error fetching doctors:", error);
+    return {
+      success: false,
+      error: true,
+      status: 500,
+      message: "Failed to fetch doctors",
+      data: [], // force empty array instead of null or undefined
+      totalRecords: 0,
+    };
   }
 }
 
-export async function getDoctorDashboardStats(): Promise<
-  ServiceResponse<{
-    totalNurses: number;
-    totalPatient: number;
-    appointmentCounts: Record<AppointmentStatus | "TODAY", number>;
-    last5Records: SharedDashboardAppointment[];
-    availableDoctors: DoctorWithRelations[];
-    totalAppointment: number;
-    monthlyData: any;
-  }>
-> {
+export async function getDoctorDashboardStats() {
   try {
     const { userId } = await auth();
-    if (!userId) return { success: false, error: true, message: "Unauthorized", status: 401, data: null };
-
     const today = daysOfWeek[new Date().getDay()];
 
-    const [totalPatient, totalNurses, appointments, doctors] = await Promise.all([
-      db.patient.count(),
-      db.staff.count({ where: { role: "NURSE" } }),
-      db.appointment.findMany({
-        where: { doctor_id: userId },
-        include: {
-          patient: { select: { id: true, first_name: true, last_name: true, gender: true, img: true, colorCode: true, date_of_birth: true } },
-          doctor: { select: { id: true, name: true, specialization: true, img: true, colorCode: true } },
-        },
-        orderBy: { appointment_date: "desc" },
-      }),
-      db.doctor.findMany({
-        where: { working_days: { some: { day: { equals: today, mode: "insensitive" } } } },
-        select: { id: true, name: true, specialization: true, img: true, colorCode: true, working_days: true },
-        take: 5,
-      }),
-    ]);
+    const [totalPatient, totalNurses, appointments, doctors] =
+      await Promise.all([
+        db.patient.count(),
+        db.staff.count({ where: { role: "NURSE" } }),
+        db.appointment.findMany({
+          where: { doctor_id: userId!, appointment_date: { lte: new Date() } },
+          include: {
+            patient: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                gender: true,
+                date_of_birth: true,
+                color_code: true,
+                img: true,
+              },
+            },
+            doctor: {
+              select: {
+                id: true,
+                name: true,
+                specialization: true,
+                img: true,
+                color_code: true,
+              },
+            },
+          },
+          orderBy: { appointment_date: "desc" },
+        }),
+        db.doctor.findMany({
+          where: { working_days: { some: { day: { equals: today, mode: "insensitive" } } } },
+          select: { id: true, name: true, specialization: true, img: true, color_code: true, working_days: true },
+          take: 5,
+        }),
+      ]);
 
-    const normalizedAppointments: SharedDashboardAppointment[] = appointments.map(normalizeDoctorAppointment);
-    const normalizedDoctors: DoctorWithRelations[] = doctors.map(normalizeDoctor);
+    const normalizedAppointments: DashboardAppointment[] = appointments.map((appt) => ({
+      ...appt,
+      patient: {
+        ...appt.patient,
+        img: appt.patient.img ?? undefined,
+        colorCode: appt.patient.color_code ?? undefined,
+      },
+      doctor: {
+        ...appt.doctor,
+        img: appt.doctor.img ?? undefined,
+        colorCode: appt.doctor.color_code ?? undefined,
+      },
+    }));
+
+    const normalizedDoctors = doctors.map((doc) => ({
+      ...doc,
+      img: doc.img ?? undefined,
+      colorCode: doc.color_code ?? undefined,
+    }));
 
     const { appointmentCounts, monthlyData } = await processAppointments(normalizedAppointments);
 
     return {
       success: true,
-      error: false,
-      status: 200,
       data: {
         totalNurses,
         totalPatient,
@@ -201,61 +131,75 @@ export async function getDoctorDashboardStats(): Promise<
         monthlyData,
       },
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
+    return { success: false, error: error.message || "Internal Server Error", status: 500 };
   }
 }
 
-// ---------------------------
-// Rating Service
-// ---------------------------
-export async function getRatingById(id: string): Promise<ServiceResponse<RatingData>> {
+export async function getDoctorById(id: string) {
   try {
-    const rawRatings = await db.rating.findMany({
+    const [doctor, totalAppointment] = await Promise.all([
+      db.doctor.findUnique({
+        where: { id },
+        include: {
+          working_days: true,
+          appointments: {
+            include: {
+              patient: { select: { id: true, first_name: true, last_name: true, gender: true, img: true, color_code: true } },
+              doctor: { select: { name: true, specialization: true, img: true, color_code: true } },
+            },
+            orderBy: { appointment_date: "desc" },
+            take: 10,
+          },
+        },
+      }),
+      db.appointment.count({ where: { doctor_id: id } }),
+    ]);
+
+    if (!doctor) return { success: false, message: "Doctor not found", status: 404 };
+
+    const normalizedDoctor = {
+      ...doctor,
+      img: doctor.img ?? undefined,
+      colorCode: doctor.color_code ?? undefined,
+      appointments: doctor.appointments.map((appt) => ({
+        ...appt,
+        patient: { ...appt.patient, img: appt.patient.img ?? undefined, colorCode: appt.patient.color_code ?? undefined },
+        doctor: { ...appt.doctor, img: appt.doctor.img ?? undefined, colorCode: appt.doctor.color_code ?? undefined },
+      })),
+    };
+
+    return { success: true, data: normalizedDoctor, totalAppointment };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Internal Server Error", status: 500 };
+  }
+}
+
+export async function getRatingById(id: string) {
+  try {
+    const data = await db.rating.findMany({
       where: { staff_id: id },
-      include: {
-        patient: { select: { first_name: true, last_name: true } },
-      },
+      include: { patient: { select: { last_name: true, first_name: true } } },
     });
 
-    const ratings: RatingWithPatient[] = rawRatings.map(r => ({
-      id: r.id.toString(), // ✅ convert number → string
-      rating: r.rating,
-      comment: r.comment ?? undefined,
-      patient: { first_name: r.patient?.first_name ?? "Unknown", last_name: r.patient?.last_name ?? "" },
-      createdAt: r.created_at,
-    }));
+    const totalRatings = data?.length ?? 0;
+    const sumRatings = data?.reduce((sum, el) => sum + el.rating, 0) ?? 0;
+    const averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
 
-    const totalRatings = ratings.length;
-    const averageRating =
-      totalRatings > 0
-        ? (
-            Math.round(
-              (ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10
-            ) / 10
-          ).toFixed(1)
-        : "0";
-
-    return { success: true, error: false, status: 200, data: { ratings, totalRatings, averageRating } };
+    return {
+      totalRatings,
+      averageRating: (Math.round(averageRating * 10) / 10).toFixed(1),
+      ratings: data,
+    };
   } catch (error) {
     console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
+    return { success: false, message: "Internal Server Error", status: 500 };
   }
 }
 
-// ---------------------------
-// Paginated Doctor List
-// ---------------------------
-export async function getAllDoctors({
-  page,
-  limit,
-  search,
-}: {
-  page: number | string;
-  limit?: number | string;
-  search?: string;
-}): Promise<ServiceResponse<DoctorWithRelations[]>> {
+export async function getAllDoctors({ page, limit, search }: { page: number | string; limit?: number | string; search?: string }) {
   try {
     const PAGE_NUMBER = Number(page) <= 0 ? 1 : Number(page);
     const LIMIT = Number(limit) || 10;
@@ -263,105 +207,36 @@ export async function getAllDoctors({
 
     const [doctors, totalRecords] = await Promise.all([
       db.doctor.findMany({
-        where: search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { specialization: { contains: search, mode: "insensitive" } },
-                { email: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {},
-        include: {
-          working_days: true,
-          appointments: {
-            include: { patient: true, doctor: true },
-            take: 5,
-          },
+        where: {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { specialization: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ],
         },
+        include: { working_days: true },
         skip: SKIP,
         take: LIMIT,
       }),
-      db.doctor.count({
-        where: search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { specialization: { contains: search, mode: "insensitive" } },
-                { email: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {},
-      }),
+      db.doctor.count(),
     ]);
 
-    const normalizedDoctors: DoctorWithRelations[] = doctors.map(normalizeDoctor);
+    const normalizedDoctors = doctors.map((doc) => ({
+      ...doc,
+      img: doc.img ?? undefined,
+      colorCode: doc.color_code ?? undefined,
+    }));
 
     return {
       success: true,
-      error: false,
-      status: 200,
       data: normalizedDoctors,
       totalRecords,
       totalPages: Math.ceil(totalRecords / LIMIT),
       currentPage: PAGE_NUMBER,
+      status: 200,
     };
   } catch (error) {
     console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500, data: null };
-  }
-}
-
-// ---------------------------
-// Lightweight Doctor List for Booking Form
-// ---------------------------
-export type DoctorForBooking = {
-  id: string;
-  name: string;
-  specialization: string;
-  license_number: string;
-  department: string | null;
-  type: string;
-  availability_status: string;
-  email: string;
-  phone: string;
-  address: string;
-  img: string | null;
-  colorCode: string | null;
-  created_at: Date;
-  updated_at: Date;
-};
-
-export async function getDoctorsForBooking(): Promise<ServiceResponse<DoctorForBooking[]>> {
-  try {
-    const doctors = await db.doctor.findMany();
-
-    const normalized: DoctorForBooking[] = doctors.map((d) => ({
-      id: d.id,
-      name: d.name,
-      specialization: d.specialization ?? "General",
-      license_number: d.license_number ?? "",
-      department: d.department ?? null,
-      type: d.type ?? "DOCTOR",
-      availability_status: d.availability_status ?? "AVAILABLE",
-      email: d.email ?? "",
-      phone: d.phone ?? "",
-      address: d.address ?? "",
-      img: d.img ?? null,
-      colorCode: d.colorCode ?? null,
-      created_at: d.created_at ?? new Date(),
-      updated_at: d.updated_at ?? new Date(),
-    }));
-
-    return { success: true, error: false, status: 200, data: normalized };
-  } catch (error) {
-    console.error(error);
-    return {
-      success: false,
-      error: true,
-      status: 500,
-      message: "Internal server error",
-      data: null,
-    };
+    return { success: false, message: "Internal Server Error", status: 500 };
   }
 }

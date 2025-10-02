@@ -38,25 +38,18 @@ export const AppointmentActionDialog = ({ type, id, disabled }: ActionsProps) =>
 
     try {
       setIsLoading(true);
-      const newReason =
-        reason ||
-        `Appointment has been ${
-          type === "approve" ? "scheduled" : "cancelled"
-        } on ${new Date().toLocaleString()}`;
-
+      const newReason = reason || `Appointment has been ${type === "approve" ? "scheduled" : "cancelled"} on ${new Date().toLocaleString()}`;
       const resp = await appointmentAction(
         id,
         type === "approve" ? AppointmentStatus.SCHEDULED : AppointmentStatus.CANCELLED,
         newReason
       );
 
-      if (resp.success) {
-        toast.success(resp.msg);
-        setReason("");
-        router.refresh();
-      } else {
-        toast.error(resp.msg);
-      }
+      if (resp.success) toast.success(resp.msg);
+      else toast.error(resp.msg);
+
+      setReason("");
+      router.refresh();
     } catch (error) {
       console.error(error);
       toast.error("Something went wrong. Try again later.");
@@ -73,35 +66,31 @@ export const AppointmentActionDialog = ({ type, id, disabled }: ActionsProps) =>
             <Check size={16} /> Approve
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full flex items-center justify-start gap-2 rounded-full text-red-500 disabled:cursor-not-allowed"
-          >
+          <Button size="sm" variant="outline" className="w-full flex items-center justify-start gap-2 rounded-full text-red-500 disabled:cursor-not-allowed">
             <Ban size={16} /> Cancel
           </Button>
         )}
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="bg-card dark:bg-card-dark text-foreground dark:text-foreground-dark">
         <div className="flex flex-col items-center justify-center py-6">
           <DialogTitle>
             {type === "approve" ? (
-              <div className="bg-emerald-200 p-4 rounded-full mb-2">
-                <GiConfirmed size={50} className="text-emerald-500" />
+              <div className="bg-emerald-200 dark:bg-emerald-600 p-4 rounded-full mb-2">
+                <GiConfirmed size={50} className="text-emerald-500 dark:text-emerald-200" />
               </div>
             ) : (
-              <div className="bg-red-200 p-4 rounded-full mb-2">
-                <MdCancel size={50} className="text-red-500" />
+              <div className="bg-red-200 dark:bg-red-600 p-4 rounded-full mb-2">
+                <MdCancel size={50} className="text-red-500 dark:text-red-200" />
               </div>
             )}
           </DialogTitle>
 
-          <span className="text-xl text-black">
-            Appointment
-            {type === "approve" ? " Confirmation" : " Cancellation"}
+          <span className="text-xl text-foreground dark:text-foreground-dark">
+            Appointment{type === "approve" ? " Confirmation" : " Cancellation"}
           </span>
-          <p className="text-sm text-center text-gray-500">
+
+          <p className="text-sm text-center text-muted-foreground dark:text-muted-foreground-dark">
             {type === "approve"
               ? "You're about to confirm this appointment. Yes to approve or No to cancel."
               : "Are you sure you want to cancel this appointment?"}
@@ -110,7 +99,7 @@ export const AppointmentActionDialog = ({ type, id, disabled }: ActionsProps) =>
           {type === "cancel" && (
             <Textarea
               disabled={isLoading}
-              className="mt-4"
+              className="mt-4 bg-card dark:bg-card-dark text-foreground dark:text-foreground-dark"
               placeholder="Cancellation reason..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -125,17 +114,15 @@ export const AppointmentActionDialog = ({ type, id, disabled }: ActionsProps) =>
               className={cn(
                 "px-4 py-2 text-sm font-medium text-white hover:text-white hover:underline",
                 type === "approve"
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-destructive hover:bg-destructive"
+                  ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  : "bg-destructive hover:bg-destructive/90 dark:bg-destructive/80"
               )}
             >
               Yes, {type === "approve" ? "Approve" : "Delete"}
             </Button>
+
             <DialogClose asChild>
-              <Button
-                variant="outline"
-                className="px-4 py-2 text-sm underline text-gray-500"
-              >
+              <Button variant="outline" className="px-4 py-2 text-sm underline text-muted-foreground dark:text-muted-foreground-dark">
                 No
               </Button>
             </DialogClose>

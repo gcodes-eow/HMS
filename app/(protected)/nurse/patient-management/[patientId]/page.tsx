@@ -12,7 +12,6 @@ import { VitalSigns } from "@/components/appointment/VitalSigns";
 import { AdministerMedicationForm } from "@/components/forms/AdministerMedicationForm";
 import RecentAppointments from "@/components/tables/RecentAppointments";
 
-// Use flexible props typing similar to AuditLogsPage
 interface PatientDetailPageProps {
   params?: Promise<Record<string, string | string[] | undefined>>;
   searchParams?: Promise<any>;
@@ -21,26 +20,27 @@ interface PatientDetailPageProps {
 const PatientDetailPage = async ({
   params,
 }: PatientDetailPageProps): Promise<JSX.Element> => {
-  // Await the promise and default to empty object
   const resolvedParams = (await params) ?? {};
   const patientId = resolvedParams.patientId as string;
-
   if (!patientId) return redirect("/404");
 
-  // Role check
   const role = await getRole();
   if (role !== "nurse") return redirect("/unauthorized");
 
-  // Current user check
   const user = await currentUser();
   if (!user?.id) return redirect("/sign-in");
 
-  // Fetch patient info
   const patient = await db.patient.findUnique({ where: { id: patientId } });
   if (!patient) return redirect("/404");
 
   // Fetch medication history
   const records = await getMedicationsForPatient(patientId);
+
+  const recordsForTable = records.map((r) => ({
+    ...r,
+    id: r.id.toString(),
+    nurse: r.nurse ?? { id: "", name: "Unknown", email: "" },
+  }));
 
   // Fetch latest appointment
   const latestAppointment = await db.appointment.findFirst({
@@ -57,6 +57,14 @@ const PatientDetailPage = async ({
     include: { doctor: true, patient: true },
   });
 
+  // Fetch staff list for AdministerMedicationForm
+  const staff = await db.staff.findMany({
+    select: { id: true, name: true, role: true },
+  });
+
+  // Check if logged-in user is part of staff
+  const currentStaff = staff.find((s) => s.id === user.id);
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-semibold">Patient Profile</h1>
@@ -65,7 +73,7 @@ const PatientDetailPage = async ({
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Medication History</h2>
-        <MedicationHistoryTable records={records} />
+        <MedicationHistoryTable records={recordsForTable} />
       </div>
 
       {latestAppointment && (
@@ -79,6 +87,8 @@ const PatientDetailPage = async ({
                 last_name: patient.last_name,
               },
             ]}
+            staff={staff}
+            currentStaffId={currentStaff?.id} // ✅ only pre-select if user is in staff
             onSuccess={(record) =>
               alert(`Medication recorded: ${record.medication}`)
             }

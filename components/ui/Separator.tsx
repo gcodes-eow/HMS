@@ -1,4 +1,4 @@
-// components/ui/separator.tsx
+// components/ui/Separator.tsx
 "use client"
 
 import * as React from "react"

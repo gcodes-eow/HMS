@@ -8,20 +8,24 @@ import {
 import db from "@/lib/db";
 import { clerkClient } from "@clerk/nextjs/server"; // Clerk SDK
 
-export async function deleteDataById(
-  id: string,
-  deleteType:
-    | "doctor"
-    | "staff"
-    | "patient"
-    | "payment"
-    | "bill"
-    | "inventory"
-    | "service"
-    | "appointment"
-    | "medicalRecord"
-    | "labTest"
-) {
+// ✅ Extended DeleteType to include "event" and "announcement"
+export type DeleteType =
+  | "doctor"
+  | "staff"
+  | "patient"
+  | "payment"
+  | "bill"
+  | "inventory"
+  | "service"
+  | "appointment"
+  | "medicalRecord"
+  | "labTest"
+  | "medication"
+  | "event"
+  | "announcement"
+  | "rosters";
+
+export async function deleteDataById(id: string, deleteType: DeleteType) {
   try {
     switch (deleteType) {
       case "doctor":
@@ -71,11 +75,23 @@ export async function deleteDataById(
         await db.labTest.delete({ where: { id: Number(id) } });
         break;
 
+      case "medication":
+        await db.medicationAdministration.delete({ where: { id } });
+        break;
+
+      case "event": // ✅ added
+        await db.event.delete({ where: { id: Number(id) } });
+        break;
+
+      case "announcement": // ✅ added
+        await db.announcement.delete({ where: { id: Number(id) } });
+        break;
+
       default:
         throw new Error("Invalid delete type");
     }
 
-    // ✅ Generic Clerk cleanup for staff/doctor too
+    // ✅ Generic Clerk cleanup for staff/doctor
     if (["staff", "doctor"].includes(deleteType)) {
       const client = await clerkClient();
       await client.users.deleteUser(id);

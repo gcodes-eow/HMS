@@ -1,4 +1,3 @@
-// components/NewPatient.tsx
 "use client";
 
 import { useUser } from "@clerk/nextjs";
@@ -24,6 +23,7 @@ import { createNewPatient, updatePatient } from "@/app/actions/patient";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { useReactToPrint } from "react-to-print";
+import { Heading } from "./ui/Heading";  // ✅ new import
 
 interface DataProps {
   data?: Patient;
@@ -31,17 +31,12 @@ interface DataProps {
   isReceptionist?: boolean;
 }
 
-// Fix: Extend form data type with correct unions for marital_status and relation
 type PatientFormValues = z.infer<typeof PatientFormSchema> & {
-  marital_status: typeof MARITAL_STATUS[number]["value"]; // e.g. "married" | "single" | ...
-  relation: typeof RELATION[number]["value"]; // e.g. "mother" | "father" | ...
+  marital_status: typeof MARITAL_STATUS[number]["value"];
+  relation: typeof RELATION[number]["value"];
 };
 
-export const NewPatient = ({
-  data,
-  type,
-  isReceptionist = false,
-}: DataProps) => {
+export const NewPatient = ({ data, type, isReceptionist = false }: DataProps) => {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -70,10 +65,10 @@ export const NewPatient = ({
       address: "",
       date_of_birth: new Date(),
       gender: "MALE",
-      marital_status: "single", // matches union type now
+      marital_status: "single",
       emergency_contact_name: "",
       emergency_contact_number: "",
-      relation: "mother", // matches union type now
+      relation: "mother",
       blood_group: "",
       allergies: "",
       medical_conditions: "",
@@ -89,7 +84,6 @@ export const NewPatient = ({
   const onSubmit: SubmitHandler<PatientFormValues> = async (values) => {
     setLoading(true);
 
-    // Fix: userId might be undefined, handle properly by passing undefined explicitly
     const actualUserId = isReceptionist ? undefined : userId;
 
     if (actualUserId === undefined && !isReceptionist) {
@@ -115,52 +109,53 @@ export const NewPatient = ({
   };
 
   useEffect(() => {
-  if (type === "create" && user) {
-    form.reset({
-      ...userData,
-      address: "",
-      date_of_birth: new Date(),
-      gender: "MALE",
-      marital_status: "single",
-      emergency_contact_name: "",
-      emergency_contact_number: "",
-      relation: "mother",
-      blood_group: "",
-      allergies: "",
-      medical_conditions: "",
-      medical_history: "",
-      insurance_number: "",
-      insurance_provider: "",
-      privacy_consent: false,
-      service_consent: false,
-      medical_consent: false,
-    });
-  } else if (type === "update" && data) {
-    form.reset({
-      first_name: data.first_name ?? "",
-      last_name: data.last_name ?? "",
-      email: data.email ?? "",
-      phone: data.phone ?? "",
-      date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : new Date(),
-      gender: data.gender ?? "MALE",
-      marital_status: data.marital_status as PatientFormValues["marital_status"],
-      address: data.address ?? "",
-      emergency_contact_name: data.emergency_contact_name ?? "",
-      emergency_contact_number: data.emergency_contact_number ?? "",
-      relation: data.relation as PatientFormValues["relation"],
-      blood_group: data.blood_group ?? "",
-      allergies: data.allergies ?? "",
-      medical_conditions: data.medical_conditions ?? "",
-      medical_history: data.medical_history ?? "",
-      insurance_number: data.insurance_number ?? "",
-      insurance_provider: data.insurance_provider ?? "",
-      medical_consent: data.medical_consent ?? false,
-      privacy_consent: data.privacy_consent ?? false,
-      service_consent: data.service_consent ?? false,
-    });
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [type, data]);
+    if (type === "create" && user) {
+      form.reset({
+        ...userData,
+        address: "",
+        date_of_birth: new Date(),
+        gender: "MALE",
+        marital_status: "single",
+        emergency_contact_name: "",
+        emergency_contact_number: "",
+        relation: "mother",
+        blood_group: "",
+        allergies: "",
+        medical_conditions: "",
+        medical_history: "",
+        insurance_number: "",
+        insurance_provider: "",
+        privacy_consent: false,
+        service_consent: false,
+        medical_consent: false,
+      });
+    } else if (type === "update" && data) {
+      form.reset({
+        first_name: data.first_name ?? "",
+        last_name: data.last_name ?? "",
+        email: data.email ?? "",
+        phone: data.phone ?? "",
+        date_of_birth: data.date_of_birth
+          ? new Date(data.date_of_birth)
+          : new Date(),
+        gender: data.gender ?? "MALE",
+        marital_status: data.marital_status as PatientFormValues["marital_status"],
+        address: data.address ?? "",
+        emergency_contact_name: data.emergency_contact_name ?? "",
+        emergency_contact_number: data.emergency_contact_number ?? "",
+        relation: data.relation as PatientFormValues["relation"],
+        blood_group: data.blood_group ?? "",
+        allergies: data.allergies ?? "",
+        medical_conditions: data.medical_conditions ?? "",
+        medical_history: data.medical_history ?? "",
+        insurance_number: data.insurance_number ?? "",
+        insurance_provider: data.insurance_provider ?? "",
+        medical_consent: data.medical_consent ?? false,
+        privacy_consent: data.privacy_consent ?? false,
+        service_consent: data.service_consent ?? false,
+      });
+    }
+  }, [type, data, user]); // ✅ fixed eslint disable
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -193,11 +188,8 @@ export const NewPatient = ({
 
       <CardContent>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-8 mt-5"
-          >
-            <h3 className="text-lg font-semibold">Personal Information</h3>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 mt-5">
+            <Heading>Personal Information</Heading>
 
             <div className="flex flex-col lg:flex-row gap-4">
               <CustomInput
@@ -268,7 +260,7 @@ export const NewPatient = ({
               label="Address"
             />
 
-            <h3 className="text-lg font-semibold">Family Information</h3>
+            <Heading>Family Information</Heading>
 
             <CustomInput
               type="input"
@@ -291,7 +283,7 @@ export const NewPatient = ({
               selectList={RELATION}
             />
 
-            <h3 className="text-lg font-semibold">Medical Information</h3>
+            <Heading>Medical Information</Heading>
 
             <CustomInput
               type="input"
@@ -341,7 +333,7 @@ export const NewPatient = ({
 
             {type !== "update" && (
               <>
-                <h3 className="text-lg font-semibold">Consent</h3>
+                <Heading>Consent</Heading>
                 <CustomInput
                   control={form.control}
                   type="checkbox"

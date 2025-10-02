@@ -1,4 +1,4 @@
-// components/available-doctor.tsx
+// components/AvailableDoctor.tsx
 import { AvailableDoctorProps } from "@/types/dataTypes";
 import { checkRole } from "@/utils/roles";
 import React from "react";
@@ -38,16 +38,16 @@ export const availableDays = ({ data }: { data: Days[] }) => {
 
 export const AvailableDoctors = async ({ data }: DataProps) => {
   return (
-    <div className="bg-white rounded-xl p-4">
+    <div className="bg-card text-card-foreground rounded-xl p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-lg font-semibold">Available Doctors</h1>
 
         {(await checkRole("ADMIN")) && (
           <Button
             asChild
-            variant={"outline"}
+            variant="outline"
             disabled={data?.length === 0}
-            className="disabled:cursor-not-allowed disabled:text-gray-200"
+            className="disabled:cursor-not-allowed disabled:text-muted-foreground"
           >
             <Link href="/record/doctors">View all</Link>
           </Button>
@@ -60,22 +60,26 @@ export const AvailableDoctors = async ({ data }: DataProps) => {
             key={id}
             className={cn(
               "border-none w-full md:w-[300px] min-h-28 xl:w-full p-4 flex gap-4",
-              id % 2 === 0 ? "odd:bg-emerald-600/5" : "even:bg-yellow-600/5"
+              id % 2 === 0
+                ? "odd:bg-emerald-600/5"
+                : "even:bg-yellow-600/5"
             )}
           >
             <ProfileImage
               url={doc?.img}
               name={doc?.name}
-              className={`md:flex min-w-14 min-h-14 md:min-w-16 md:min-h-16`}
-              textClassName="text-2xl font-semibold text-black"
+              className="md:flex min-w-14 min-h-14 md:min-w-16 md:min-h-16"
+              textClassName="text-2xl font-semibold text-foreground"
               bgColor={doc?.colorCode!}
             />
             <div>
-              <h2 className="font-semibold text-lg md:text-xl">{doc?.name}</h2>
-              <p className="text-base capitalize text-gray-600">
+              <h2 className="font-semibold text-lg md:text-xl text-foreground">
+                {doc?.name}
+              </h2>
+              <p className="text-base capitalize text-muted-foreground">
                 {doc?.specialization}
               </p>
-              <p className="text-sm flex items-center">
+              <p className="text-sm flex items-center text-muted-foreground">
                 <span className="hidden lg:flex">Available Time:</span>
                 {availableDays({ data: doc?.working_days })}
               </p>

@@ -1,4 +1,3 @@
-// components/pagination.tsx
 "use client";
 
 import React, { useCallback } from "react";
@@ -23,9 +22,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   const pathname = usePathname();
 
   const createQueryString = useCallback(
-    (name: string, value: string) => {
+    (page: number) => {
       const params = new URLSearchParams(searchParams.toString());
-      params.set(name, value);
+      params.set("p", page.toString());
       return params.toString();
     },
     [searchParams]
@@ -33,26 +32,26 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   const handlePrevious = () => {
     if (currentPage > 1) {
-      router.push(pathname + "?" + createQueryString("p", (currentPage - 1).toString()));
+      router.push(`${pathname}?${createQueryString(currentPage - 1)}`);
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
-      router.push(pathname + "?" + createQueryString("p", (currentPage + 1).toString()));
+      router.push(`${pathname}?${createQueryString(currentPage + 1)}`);
     }
   };
 
   if (totalRecords === 0) return null;
 
   return (
-    <div className="p-4 flex items-center justify-between text-gray-600 mt-5">
+    <div className="p-4 flex items-center justify-between text-gray-600 dark:text-gray-300 mt-5">
       <Button
         size="sm"
         variant="outline"
         disabled={currentPage === 1}
         onClick={handlePrevious}
-        className="py-2 px-4 rounded-md bg-slate-200 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+        className="py-2 px-4 rounded-md bg-slate-200 dark:bg-slate-700 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
       >
         Previous
       </Button>
@@ -60,7 +59,9 @@ export const Pagination: React.FC<PaginationProps> = ({
       <div className="flex items-center gap-2 text-sm">
         <span className="text-xs lg:text-sm">
           Showing {currentPage * limit - (limit - 1)} to{" "}
-          {currentPage * limit <= totalRecords ? currentPage * limit : totalRecords}{" "}
+          {currentPage * limit <= totalRecords
+            ? currentPage * limit
+            : totalRecords}{" "}
           of {totalRecords}
         </span>
       </div>
@@ -70,7 +71,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         variant="outline"
         disabled={currentPage === totalPages}
         onClick={handleNext}
-        className="py-2 px-4 rounded-md bg-slate-200 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+        className="py-2 px-4 rounded-md bg-slate-200 dark:bg-slate-700 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
       >
         Next
       </Button>

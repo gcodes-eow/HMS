@@ -63,63 +63,30 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-    /* 👆 Now Geist Sans is the default, no need for Arial */
+    @apply bg-background text-foreground font-sans transition-colors duration-300;
   }
 }
 
-/* For WebKit browsers (Chrome, Safari, Edge) */
-html,
-body {
-  overflow: auto;
-}
-
-/* Customize the scrollbar size */
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 10px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* For Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #cbcbcb #f1f1f1;
-}
+/* Scrollbars */
+html, body { overflow: auto; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+*::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground)); border-radius: 10px; }
+*::-webkit-scrollbar-thumb:hover { background: hsl(var(--foreground)); }
+* { scrollbar-width: thin; scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--muted)); }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
+  .text-balance { text-wrap: balance; }
   .animate-fade-in {
     animation: fadeInUp 0.5s ease-out both;
   }
-
   @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
+/* Doctor card styling */
 .doctorCard {
-  @apply bg-white p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%];
+  @apply bg-card text-card-foreground p-4 rounded-md flex gap-4 w-full md:w-[48%] xl:w-[45%] 2xl:w-[48%];
 }

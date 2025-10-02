@@ -1,4 +1,4 @@
-// components/appointment/appointment-details.tsx
+// components/appointment/AppointmentDetails.tsx
 import { format } from "date-fns";
 import { SmallCard } from "../SmallCard";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
@@ -25,6 +25,7 @@ export const AppointmentDetails = ({
 }: AppointmentDetailsProps) => {
   const isCancelled = status === "CANCELLED";
 
+  // Handle both Date and string
   const formattedDate =
     typeof appointment_date === "string"
       ? format(new Date(appointment_date), "MMM d, yyyy")
@@ -43,6 +44,7 @@ export const AppointmentDetails = ({
           <SmallCard label="Time" value={time} />
         </div>
 
+        {/* Cancelled info if exists */}
         {isCancelled && (
           <div className="bg-yellow-100 p-4 mt-4 rounded-md">
             <span className="font-semibold text-sm text-gray-800">
@@ -53,7 +55,8 @@ export const AppointmentDetails = ({
             </p>
             {cancelled_by && (
               <p className="text-sm text-gray-700">
-                <strong>Cancelled by:</strong> {cancelled_by === "patient" ? "Patient" : "Doctor"}
+                <strong>Cancelled by:</strong>{" "}
+                {cancelled_by === "patient" ? "Patient" : "Doctor"}
               </p>
             )}
           </div>

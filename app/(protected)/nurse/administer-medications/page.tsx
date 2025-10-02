@@ -1,57 +1,33 @@
 // app/(protected)/nurse/administer-medications/page.tsx
-import { auth } from "@clerk/nextjs/server";
-import db from "@/lib/db";
-import AdministerMedicationClient from "./AdministerMedicationClient";
+import { getAllMedicationAdministrationsPaginated } from "@/utils/services/medicalServices";
+import { getAllPatients } from "@/app/actions/patient";
+import { getAllStaff } from "@/utils/services/staff";
+import MedicationsClient from "@/components/MedicationsClient"; // client wrapper
 
-export default async function AdministerMedicationPage(props: {
-  searchParams: Promise<{ p?: string }>;
-}) {
-  const { userId } = await auth();
-  if (!userId) return <div>Unauthorized</div>;
+const AdministerMedicationsPage = async () => {
+  // Fetch first page (page 1) with 10 rows per page
+  const [medsRes, patRes, staffRes] = await Promise.all([
+    getAllMedicationAdministrationsPaginated(1, 10),
+    getAllPatients(),
+    getAllStaff({ page: 1, limit: 100 }),
+  ]);
 
-  // ✅ properly await searchParams
-  const searchParams = await props.searchParams;
-  const page = parseInt(searchParams?.p || "1", 10);
-  const limit = 10;
-  const skip = (page - 1) * limit;
-
-  // ✅ fetch all patients (no nurse filter available in schema)
-  const patients = await db.patient.findMany({
-    select: {
-      id: true,
-      first_name: true,
-      last_name: true,
-    },
-    orderBy: { first_name: "asc" },
-  });
-
-  // ✅ count medications for pagination
-  const totalRecords = await db.medicationAdministration.count({
-    where: { nurseId: userId },
-  });
-
-  // ✅ fetch medications, include nurse + patient details
-  const medications = await db.medicationAdministration.findMany({
-    where: { nurseId: userId },
-    orderBy: { administeredAt: "desc" },
-    skip,
-    take: limit,
-    include: {
-      nurse: { select: { name: true } },
-      patient: { select: { first_name: true, last_name: true } },
-    },
-  });
+  const records = medsRes.data ?? [];
+  const totalRecords = medsRes.totalRecords ?? 0;
+  const totalPages = medsRes.totalPages ?? 1;
+  const patients = patRes.data ?? [];
+  const staff = staffRes.data ?? [];
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Administer Medication</h1>
-      <AdministerMedicationClient
-        patients={patients}
-        medications={medications}
-        totalRecords={totalRecords}
-        currentPage={page}
-        limit={limit}
-      />
-    </div>
+    <MedicationsClient
+      initialRecords={records}
+      totalRecords={totalRecords}
+      totalPages={totalPages}
+      initialPage={1}
+      patients={patients}
+      staff={staff}
+    />
   );
-}
+};
+
+export default AdministerMedicationsPage;

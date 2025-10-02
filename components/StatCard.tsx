@@ -1,4 +1,3 @@
-// components/stat-card.tsx
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 import React from "react";
@@ -20,6 +19,7 @@ interface CardProps {
 const CardIcon = ({ icon: Icon }: { icon: LucideIcon }) => {
   return <Icon />;
 };
+
 export const StatCard = ({
   title,
   icon,
@@ -32,7 +32,7 @@ export const StatCard = ({
   return (
     <Card className={cn("w-full md:w-[330px] 2xl:w-[250px]", className)}>
       <CardHeader className="flex flex-row items-center justify-between py-3 capitalize">
-        <h3>{title}</h3>
+        <h3 className="text-foreground">{title}</h3>
         <Button
           asChild
           size="sm"
@@ -47,21 +47,20 @@ export const StatCard = ({
         <div className="flex items-center gap-4">
           <div
             className={cn(
-              "w-10 h-10 bg-violet-50-500/15 rounded-full flex items-center justify-center text-violet-600",
+              "w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary",
               iconClassName
             )}
           >
             <CardIcon icon={icon} />
           </div>
-
-          <h2 className="text-2xl 2xl:text-3xl font-semibold">
+          <h2 className="text-2xl 2xl:text-3xl font-semibold text-foreground">
             {formatNumber(value)}
           </h2>
         </div>
       </CardContent>
 
       <CardFooter className="pb-3">
-        <p className="text-sm text-gray-500">{note}</p>
+        <p className="text-sm text-muted-foreground">{note}</p>
       </CardFooter>
     </Card>
   );

@@ -1,4 +1,5 @@
 // components/forms/BookAppointment.tsx
+// components/forms/BookAppointment.tsx
 "use client";
 
 import { z } from "zod";
@@ -30,7 +31,6 @@ import {
 import { toast } from "sonner";
 import { createAppointment } from "@/app/actions/appointment";
 
-// ✅ Type-only import
 import type { Patient, Doctor, Status, JOBTYPE } from "@/types/dataTypes";
 
 const TYPES = [
@@ -59,14 +59,14 @@ const TYPES = [
 
 interface BookAppointmentFormProps {
   patient?: Patient;
-  patients?: Patient[];
+  patients: Patient[];
   doctors: (Doctor & { availability_status: Status; type: JOBTYPE })[];
   role: string;
 }
 
 export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
   patient,
-  patients = [],
+  patients,
   doctors,
   role,
 }) => {
@@ -75,6 +75,7 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const appointmentTimes = generateTimes(8, 17, 30);
 
   const defaultValues = useMemo(
@@ -113,6 +114,7 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
     }
   };
 
+  // Filter patients based on searchTerm
   const filteredPatients = useMemo(() => {
     if (!searchTerm) return patients;
     return patients.filter((p) =>
@@ -120,7 +122,13 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
     );
   }, [patients, searchTerm]);
 
-  useEffect(() => setHighlightedIndex(0), [filteredPatients]);
+  // Reset highlighted index when search term changes
+  useEffect(() => setHighlightedIndex(0), [searchTerm]);
+
+  // Focus search input if no default patient
+  useEffect(() => {
+    if (!patient && inputRef.current) inputRef.current.focus();
+  }, [patient]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -147,14 +155,24 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 2xl:mt-10">
-        {/* Patient Info */}
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 2xl:mt-10"
+      >
+        {/* Patient Selection */}
         <div className="md:col-span-2">
           {role === "patient" && patient ? (
             <div className="w-full rounded-md border border-input bg-background px-3 py-1 flex items-center gap-4">
-              <ProfileImage url={safeImg(patient.img)} name={`${patient.first_name} ${patient.last_name}`} className="size-16 border border-input" bgColor={safeColor(patient.colorCode)} />
+              <ProfileImage
+                url={safeImg(patient.img)}
+                name={`${patient.first_name} ${patient.last_name}`}
+                className="size-16 border border-input"
+                bgColor={safeColor(patient.colorCode)}
+              />
               <div>
-                <p className="font-semibold text-lg">{patient.first_name} {patient.last_name}</p>
+                <p className="font-semibold text-lg">
+                  {patient.first_name} {patient.last_name}
+                </p>
                 <span className="text-sm text-gray-500 capitalize">{patient.gender}</span>
               </div>
             </div>
@@ -166,19 +184,44 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
                 <FormItem>
                   <FormLabel>Patient</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={isSubmitting}>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                      disabled={isSubmitting}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a patient" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-60 overflow-y-auto" onKeyDown={handleKeyDown} ref={listRef}>
+                      <SelectContent
+                        className="max-h-60 overflow-y-auto"
+                        onKeyDown={handleKeyDown}
+                        ref={listRef}
+                      >
                         <div className="p-2 sticky top-0 bg-white z-10">
-                          <Input placeholder="Type to search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full mb-2" />
+                          <Input
+                            ref={inputRef}
+                            autoFocus
+                            placeholder="Type to search..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full mb-2"
+                          />
                         </div>
-                        {filteredPatients.length ? (
+                        {filteredPatients.length > 0 ? (
                           filteredPatients.map((p, idx) => (
-                            <SelectItem key={p.id} value={p.id} className={highlightedIndex === idx ? "bg-blue-100" : undefined}>
+                            <SelectItem
+                              key={p.id}
+                              value={p.id}
+                              className={highlightedIndex === idx ? "bg-blue-100" : undefined}
+                            >
                               <div className="flex items-center gap-2 p-2">
-                                <ProfileImage url={safeImg(p.img)} name={`${p.first_name} ${p.last_name}`} bgColor={safeColor(p.colorCode)} textClassName="text-black" className="size-8" />
+                                <ProfileImage
+                                  url={safeImg(p.img)}
+                                  name={`${p.first_name} ${p.last_name}`}
+                                  bgColor={safeColor(p.colorCode)}
+                                  textClassName="text-black"
+                                  className="size-8"
+                                />
                                 <div>
                                   <p className="font-medium">{p.first_name} {p.last_name}</p>
                                   <span className="text-sm text-gray-600">{p.gender}</span>
@@ -187,7 +230,9 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
                             </SelectItem>
                           ))
                         ) : (
-                          <div className="px-2 py-4 text-sm text-gray-500">No matching patients</div>
+                          <div className="px-2 py-4 text-sm text-gray-500">
+                            No matching patients
+                          </div>
                         )}
                       </SelectContent>
                     </Select>
@@ -200,25 +245,64 @@ export const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
         </div>
 
         {/* Appointment Type */}
-        <CustomInput type="select" selectList={TYPES} control={form.control} name="type" label="Appointment Type" placeholder="Select an appointment type" />
+        <CustomInput
+          type="select"
+          selectList={TYPES}
+          control={form.control}
+          name="type"
+          label="Appointment Type"
+          placeholder="Select an appointment type"
+        />
 
         {/* Doctor Select */}
-        <CustomInput type="select" selectList={doctors.map(d => ({ label: d.name, value: d.id }))} control={form.control} name="doctor_id" label="Physician" placeholder="Select a doctor" />
+        <CustomInput
+          type="select"
+          selectList={doctors.map((d) => ({ label: d.name, value: d.id }))}
+          control={form.control}
+          name="doctor_id"
+          label="Physician"
+          placeholder="Select a doctor"
+        />
 
         {/* Date */}
-        <CustomInput type="input" control={form.control} name="appointment_date" label="Date" inputType="date" />
+        <CustomInput
+          type="input"
+          control={form.control}
+          name="appointment_date"
+          label="Date"
+          inputType="date"
+        />
 
         {/* Time */}
-        <CustomInput type="select" control={form.control} name="time" label="Time" selectList={appointmentTimes} placeholder="Select time" />
+        <CustomInput
+          type="select"
+          control={form.control}
+          name="time"
+          label="Time"
+          selectList={appointmentTimes}
+          placeholder="Select time"
+        />
 
         {/* Note */}
         <div className="md:col-span-2">
-          <CustomInput type="textarea" control={form.control} name="note" label="Additional Note" placeholder="Additional note" />
+          <CustomInput
+            type="textarea"
+            control={form.control}
+            name="note"
+            label="Additional Note"
+            placeholder="Additional note"
+          />
         </div>
 
         {/* Submit */}
         <div className="md:col-span-2">
-          <Button disabled={isSubmitting} type="submit" className="bg-blue-600 w-full">Submit</Button>
+          <Button
+            disabled={isSubmitting}
+            type="submit"
+            className="bg-blue-600 w-full"
+          >
+            Submit
+          </Button>
         </div>
       </form>
     </Form>

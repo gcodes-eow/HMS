@@ -12,6 +12,7 @@ interface ActionProps {
   id: string | number;
   status: string;
 }
+
 export const AppointmentAction = ({ id, status }: ActionProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState<AppointmentStatus | "">("");
@@ -21,24 +22,22 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
   const handleAction = async () => {
     try {
       setIsLoading(true);
-      const newReason =
-        reason || `Appointment has been ${selected?.toLowerCase()} on ${new Date()}`;
-
+      const newReason = reason || `Appointment has been ${selected?.toLowerCase()} on ${new Date()}`;
       const resp = await appointmentAction(id, selected as AppointmentStatus, newReason);
 
-      if (resp.success) {
-        toast.success(resp.msg);
-        router.refresh();
-      } else {
-        toast.error(resp.msg);
-      }
+      if (resp.success) toast.success(resp.msg);
+      else toast.error(resp.msg);
+
+      router.refresh();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Something went wrong. Try again later.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const statusClasses = "text-black dark:text-white";
 
   return (
     <div>
@@ -46,7 +45,7 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
         <Button
           variant="outline"
           disabled={status === "PENDING" || isLoading || status === "COMPLETED"}
-          className="bg-yellow-200 text-black"
+          className={`bg-yellow-200 dark:bg-yellow-600 ${statusClasses}`}
           onClick={() => setSelected(AppointmentStatus.PENDING)}
         >
           Pending
@@ -54,7 +53,7 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
         <Button
           variant="outline"
           disabled={status === "SCHEDULED" || isLoading || status === "COMPLETED"}
-          className="bg-blue-200 text-black"
+          className={`bg-blue-200 dark:bg-blue-600 ${statusClasses}`}
           onClick={() => setSelected(AppointmentStatus.SCHEDULED)}
         >
           Approve
@@ -62,7 +61,7 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
         <Button
           variant="outline"
           disabled={status === "COMPLETED" || isLoading}
-          className="bg-emerald-200 text-black"
+          className={`bg-emerald-200 dark:bg-emerald-600 ${statusClasses}`}
           onClick={() => setSelected(AppointmentStatus.COMPLETED)}
         >
           Completed
@@ -70,7 +69,7 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
         <Button
           variant="outline"
           disabled={status === "CANCELLED" || isLoading || status === "COMPLETED"}
-          className="bg-red-200 text-black"
+          className={`bg-red-200 dark:bg-red-600 ${statusClasses}`}
           onClick={() => setSelected(AppointmentStatus.CANCELLED)}
         >
           Cancel
@@ -80,15 +79,15 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
       {selected === AppointmentStatus.CANCELLED && (
         <Textarea
           disabled={isLoading}
-          className="mt-4"
+          className="mt-4 bg-card dark:bg-card-dark text-foreground dark:text-foreground-dark"
           placeholder="Enter reason..."
           onChange={(e) => setReason(e.target.value)}
         />
       )}
 
       {selected && (
-        <div className="flex items-center justify-between mt-6 bg-red-100 p-4 rounded">
-          <p className="">Are you sure you want to perform this action?</p>
+        <div className="flex items-center justify-between mt-6 bg-red-100 dark:bg-red-800 p-4 rounded text-foreground dark:text-foreground-dark">
+          <p>Are you sure you want to perform this action?</p>
           <Button disabled={isLoading} type="button" onClick={handleAction}>
             Yes
           </Button>

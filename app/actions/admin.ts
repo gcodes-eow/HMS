@@ -59,7 +59,7 @@ export async function createNewStaff(data: any) {
     await db.staff.create({
       data: {
         ...validatedValues,
-        colorCode: generateRandomColor(),
+        color_code: generateRandomColor(),
         id: user.id,
         status: "ACTIVE",
       },

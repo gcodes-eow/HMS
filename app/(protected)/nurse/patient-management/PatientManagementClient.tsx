@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import NursePatientListTable from "@/components/tables/NursePatientListTable";
-import SearchInput from "@/components/appointment/SearchInput";
+import SearchInput from "@/components/SearchInput";
 
 interface Patient {
   id: string;

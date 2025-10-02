@@ -1,132 +1,90 @@
 // app/(protected)/record/appointments/[id]/page.tsx
-import { AppointmentTable } from "@/components/tables/AppointmentTable";
-import { Pagination } from "@/components/Pagination";
-import { AppointmentListToolbar } from "@/components/filters/AppointmentListToolbar";
-import { getPatientAppointments } from "@/utils/services/appointment";
-import { getDoctors } from "@/utils/services/doctor";
-import { getPatientDashboardStatistics } from "@/utils/services/patient";
-import { auth } from "@clerk/nextjs/server";
-import { getRole } from "@/utils/roles";
-import { DATA_LIMIT } from "@/utils/settings";
-import { AppointmentStatus } from "@prisma/client";
-import React from "react";
-import { BriefcaseBusiness } from "lucide-react";
-import { AppointmentContainer } from "@/components/AppointmentContainer";
+import { AppointmentDetails } from "@/components/appointment/AppointmentDetails";
+import AppointmentQuickLinks from "@/components/appointment/AppointmentQuickLinks";
+import { BillsContainer } from "@/components/appointment/BillsContainer";
+import ChartContainer from "@/components/appointment/ChartContainer";
+import { DiagnosisContainer } from "@/components/appointment/DiagnosisContainer";
+import { PatientDetailsCard } from "@/components/appointment/PatientDetailsCard";
+import { PaymentsContainer } from "@/components/appointment/PaymentContainer";
+import { VitalSigns } from "@/components/appointment/VitalSigns";
+import { MedicalHistoryContainer } from "@/components/MedicalHistoryContainer";
+import { getAppointmentById } from "@/utils/services/appointment";
 
-const AppointmentTableWrapper = async ({
-  searchParamsPromise,
-  userId,
-  role,
+const AppointmentDetailsPage = async ({
+  params,
+  searchParams,
 }: {
-  searchParamsPromise?: Promise<{ [key: string]: string }>;
-  userId?: string;
-  role: string;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
-  const searchParams = await searchParamsPromise;
+  const resolvedParams = await params;
+  const resolvedSearchParams = (await searchParams) ?? {};
 
-  const page = Number(searchParams?.p || 1);
-  const query = searchParams?.q || "";
-  const statusParam = searchParams?.status;
+  const { id } = resolvedParams;
+  const cat = (resolvedSearchParams.cat as string) || "charts";
 
-  const statusFilter =
-    statusParam &&
-    statusParam.toLowerCase() !== "all" &&
-    ["PENDING", "SCHEDULED", "CANCELLED", "COMPLETED"].includes(
-      statusParam.toUpperCase()
-    )
-      ? (statusParam.toUpperCase() as AppointmentStatus)
-      : undefined;
+  const response = await getAppointmentById(Number(id));
 
-  const sort = (searchParams?.sort as "newest" | "oldest") || "newest";
-  const user_id = role === "user" ? userId : searchParams?.id;
+  if (!response.success || !response.data) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-gray-600">Appointment not found.</p>
+      </div>
+    );
+  }
 
-  const response = await getPatientAppointments({
-    page,
-    search: query,
-    status: statusFilter,
-    id: user_id ?? "",
-    sort,
-  });
-
-  if (!response.success || !response.data || response.data.length === 0)
-    return <p>No appointments found.</p>;
+  const data = response.data;
 
   return (
-    <div>
-      <AppointmentTable
-        data={response.data}
-        userId={userId ?? undefined}
-        statusFilter={statusFilter}
-        sortOrder={sort}
-      />
-      <Pagination
-        totalRecords={response.totalRecords ?? 0}
-        currentPage={response.currentPage ?? 1}
-        totalPages={response.totalPages ?? 1}
-        limit={DATA_LIMIT}
-      />
-    </div>
-  );
-};
+    <div className="flex p-6 flex-col-reverse lg:flex-row w-full min-h-screen gap-10">
+      {/* LEFT */}
+      <div className="w-full lg:w-[65%] flex flex-col gap-6">
+        {cat === "charts" && <ChartContainer id={data.patient_id} />}
 
-const AppointmentsPage = async ({ searchParams }: { searchParams?: Promise<any> }) => {
-  const resolvedSearchParams = await searchParams;
-  const [role, { userId }] = await Promise.all([getRole(), auth()]);
-  const isPatient = role === "user";
+        {cat === "appointments" && (
+          <>
+            <AppointmentDetails
+              id={data.id}
+              patient_id={data.patient_id}
+              appointment_date={data.appointment_date}
+              time={data.time}
+              notes={data.note ?? ""}
+            />
 
-  const doctorsResponse = await getDoctors();
-  const patientResponse = isPatient
-    ? await getPatientDashboardStatistics(userId ?? "")
-    : resolvedSearchParams?.id
-    ? await getPatientDashboardStatistics(resolvedSearchParams.id)
-    : undefined;
+            <VitalSigns
+              id={String(data.id)}
+              patientId={data.patient_id}
+              doctorId={data.doctor_id}
+            />
+          </>
+        )}
 
-  // ✅ Fetch total count separately
-  const countResponse = await getPatientAppointments({
-    page: 1,
-    search: "",
-    id: isPatient ? userId ?? "" : resolvedSearchParams?.id ?? "",
-    sort: "newest",
-  });
-
-  const totalAppointments = countResponse?.totalRecords ?? 0;
-
-  return (
-    <div className="bg-white rounded-xl p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <BriefcaseBusiness size={20} />
-          <span className="text-2xl font-semibold">{totalAppointments}</span>
-          <span className="text-gray-600">total appointments</span>
-        </div>
-
-        <div className="flex gap-2 items-center">
-          {isPatient && patientResponse?.success && (
-            <AppointmentContainer id={userId ?? ""} />
-          )}
-          <AppointmentListToolbar
-            searchParamKey="q"
-            filterParamKey="status"
-            filterPlaceholder="Filter by status"
-            sortParamKey="sort"
-            sortOptions={[
-              { value: "newest", label: "Newest First" },
-              { value: "oldest", label: "Oldest First" },
-            ]}
-            patientResponse={patientResponse}
-            doctorsResponse={doctorsResponse}
-            role={role}
+        {cat === "diagnosis" && (
+          <DiagnosisContainer
+            id={String(data.id)}
+            patientId={data.patient_id}
+            doctorId={data.doctor_id}
           />
-        </div>
+        )}
+
+        {cat === "medical-history" && (
+          <MedicalHistoryContainer patientId={data.patient_id} />
+        )}
+
+        {cat === "billing" && <BillsContainer id={String(data.id)} />}
+
+        {cat === "payments" && (
+          <PaymentsContainer patientId={data.patient_id} />
+        )}
       </div>
 
-      <AppointmentTableWrapper
-        searchParamsPromise={searchParams}
-        userId={userId ?? ""}
-        role={role}
-      />
+      {/* RIGHT */}
+      <div className="flex-1 space-y-6">
+        <AppointmentQuickLinks staffId={data.doctor_id} />
+        <PatientDetailsCard data={data.patient} />
+      </div>
     </div>
   );
 };
 
-export default AppointmentsPage;
+export default AppointmentDetailsPage;

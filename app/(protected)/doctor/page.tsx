@@ -11,21 +11,19 @@ import { currentUser } from "@clerk/nextjs/server";
 import { BriefcaseBusiness, BriefcaseMedical, User, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import React from "react";
 
 const DoctorDashboard = async () => {
   const isDoctor = await checkRole("DOCTOR");
-
-  if (!isDoctor) {
-    return redirect("/unauthorized");
-  }
+  if (!isDoctor) return redirect("/unauthorized");
 
   const user = await currentUser();
 
-  // ✅ Access .data safely
-  const statsResponse = await getDoctorDashboardStats();
-  if (!statsResponse.success || !statsResponse.data) {
-    return redirect("/error");
-  }
+  // ✅ Get normalized data
+  const response = await getDoctorDashboardStats();
+
+  // Handle failed response
+  if (!response.success || !response.data) return redirect("/unauthorized");
 
   const {
     totalPatient,
@@ -35,7 +33,7 @@ const DoctorDashboard = async () => {
     availableDoctors,
     monthlyData,
     last5Records,
-  } = statsResponse.data;
+  } = response.data;
 
   const cardData = [
     {
@@ -67,7 +65,7 @@ const DoctorDashboard = async () => {
     },
     {
       title: "Consultation",
-      value: appointmentCounts?.COMPLETED,
+      value: appointmentCounts?.COMPLETED ?? 0,
       icon: BriefcaseMedical,
       className: "bg-emerald-600/15",
       iconClassName: "bg-emerald-600/25 text-emerald-600",
@@ -107,21 +105,21 @@ const DoctorDashboard = async () => {
         </div>
 
         <div className="h-[500px]">
-          <AppointmentChart data={monthlyData!} />
+          <AppointmentChart data={monthlyData ?? []} />
         </div>
 
         <div className="bg-white rounded-xl p-4 mt-8">
-          <RecentAppointments data={last5Records!} />
+          <RecentAppointments data={last5Records ?? []} />
         </div>
       </div>
 
       {/* RIGHT */}
       <div className="w-full xl:w-[30%]">
         <div className="w-full h-[450px] mb-8">
-          <StatSummary data={appointmentCounts} total={totalAppointment!} />
+          <StatSummary data={appointmentCounts ?? {}} total={totalAppointment ?? 0} />
         </div>
 
-        <AvailableDoctors data={availableDoctors as any} />
+        <AvailableDoctors data={availableDoctors ?? []} />
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   UserRound,
   Users,
   UsersRound,
+  Calendar,
 } from "lucide-react";
 import { LogoutButton } from "./LogoutButton";
 
@@ -31,10 +32,11 @@ const ACCESS_LEVELS_ALL = [
   "cashier",
   "receptionist",
   "pharmacist",
+  "manager",
 ];
 
 const SidebarIcon = ({ icon: Icon }: { icon: LucideIcon }) => (
-  <Icon className="size-6 lg:size-5" />
+  <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
 );
 
 interface SidebarProps {
@@ -49,18 +51,66 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
     {
       label: "MENU",
       links: [
-        { name: "Dashboard", href: "/", access: ACCESS_LEVELS_ALL, icon: LayoutDashboard },
+        {
+          name: "Dashboard",
+          href: "/",
+          access: ACCESS_LEVELS_ALL,
+          icon: LayoutDashboard,
+        },
         { name: "Profile", href: "/patient/self", access: ["patient"], icon: User },
       ],
     },
     {
       label: "Manage",
       links: [
-        { name: "Users", href: "/record/users", access: ["admin"], icon: Users },
-        { name: "Doctors", href: "/record/doctors", access: ["admin", "doctor"], icon: User },
-        { name: "Staffs", href: "/record/staffs", access: ["admin", "doctor"], icon: UserRound },
-        { name: "Patients", href: "/record/patients", access: ["admin", "doctor", "nurse", "receptionist"], icon: UsersRound },
-        { name: "Appointments", href: "/record/appointments", access: ["admin", "doctor", "nurse", "receptionist"], icon: ListOrdered },
+        {
+          name: "Management",
+          href: "/management",
+          access: ["manager"],
+          icon: UsersRound,
+        },
+        {
+          name: "Users",
+          href: "/record/users",
+          access: ["admin", "manager"],
+          icon: Users,
+        },
+        {
+          name: "Doctors",
+          href: "/record/doctors",
+          access: ["admin", "manager"],
+          icon: User,
+        },
+        {
+          name: "Staffs",
+          href: "/record/staffs",
+          access: ["admin", "doctor", "manager"],
+          icon: UserRound,
+        },
+        {
+          name: "Patients",
+          href: "/record/patients",
+          access: [
+            "admin",
+            "doctor",
+            "nurse",
+            "receptionist",
+            "manager",
+          ],
+          icon: UsersRound,
+        },
+        {
+          name: "Appointments",
+          href: "/record/appointments",
+          access: [
+            "admin",
+            "doctor",
+            "nurse",
+            "receptionist",
+            "manager",
+          ],
+          icon: ListOrdered,
+        },
         ...(role === "patient"
           ? [
               {
@@ -71,27 +121,162 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
               },
             ]
           : []),
-        { name: "Services", href: "/record/services", access: ["admin", "nurse", "doctor", "receptionist", "pharmacist"], icon: SquareActivity },
-        { name: "Medical Records", href: "/record/medical-records", access: ["admin", "doctor", "nurse", "laboratory"], icon: SquareActivity },
-        { name: "Laboratory", href: "/laboratory", access: ["admin", "doctor", "nurse", "laboratory"], icon: SquareActivity },
-        { name: "Billing Overview", href: "/record/billing", access: ["admin", "doctor", "cashier", "receptionist"], icon: Receipt },
-        { name: "Inventory", href: "/record/inventory", access: ["admin", "pharmacist", "cashier"], icon: Pill },
-
-        // Updated access for nurse routes
-        { name: "Patient Management", href: "/nurse/patient-management", access: ["admin", "doctor", "nurse"], icon: Users },
-        { name: "Administer Medications", href: "/nurse/administer-medications", access: ["admin", "doctor", "nurse", "pharmacist"], icon: Pill },
-
-        { name: "Records", href: "/patient/self", access: ["patient"], icon: List },
-        { name: "Prescription", href: "#", access: ["patient", "pharmacist"], icon: Pill },
-        { name: "Billing", href: "/patient/self?cat=payments", access: ["patient", "cashier", "receptionist"], icon: Receipt },
+        {
+          name: "Services",
+          href: "/record/services",
+          access: [
+            "admin",
+            "manager",
+            "nurse",
+            "doctor",
+            "receptionist",
+            "pharmacist",
+          ],
+          icon: SquareActivity,
+        },
+        {
+          name: "Medical Records",
+          href: "/record/medical-records",
+          access: ["admin", "doctor", "nurse", "laboratory", "manager"],
+          icon: SquareActivity,
+        },
+        {
+          name: "Laboratory",
+          href: "/laboratory",
+          access: ["admin", "doctor", "nurse", "laboratory", "manager"],
+          icon: SquareActivity,
+        },
+        {
+          name: "Billing Overview",
+          href: "/record/billing",
+          access: ["admin", "doctor", "cashier", "receptionist", "manager"],
+          icon: Receipt,
+        },
+        {
+          name: "Inventory",
+          href: "/record/inventory",
+          access: ["admin", "pharmacist", "cashier", "manager"],
+          icon: Pill,
+        },
+        {
+          name: "Patient Management",
+          href: "/nurse/patient-management",
+          access: ["admin", "doctor", "nurse", "manager"],
+          icon: Users,
+        },
+        {
+          name: "Administer Medications",
+          href: "/nurse/administer-medications",
+          access: [
+            "admin",
+            "doctor",
+            "nurse",
+            "pharmacist",
+            "manager",
+          ],
+          icon: Pill,
+        },
+        {
+          name: "Duty Rosters",
+          href: "/rosters",
+          access: [
+            "admin",
+            "manager",
+          ],
+          icon: List,
+        },
+        {
+          name: "View Rosters",
+          href: "/rosters/view-rosters",
+          access: [
+            "admin",
+            "manager",
+            "doctor",
+            "nurse",
+            "cashier",
+            "pharmacist",
+            "receptionist",
+            "laboratory",
+          ],
+          icon: List,
+        },
+        {
+          name: "Leave Requests",
+          href: "/leave",
+          access: [
+            "admin",
+            "doctor",
+            "nurse",
+            "cashier",
+            "pharmacist",
+            "receptionist",
+            "laboratory",
+            "manager",
+          ],
+          icon: List,
+        },
+        {
+          name: "Events & Announcements",
+          href: "/events",
+          access: ["admin", "manager"],
+          icon: List,
+        },
+        {
+          name: "Calendar",
+          href: "/events/calendar",
+          access: [
+            "admin",
+            "manager",
+            "doctor",
+            "nurse",
+            "cashier",
+            "pharmacist",
+            "receptionist",
+            "laboratory",
+          ],
+          icon: Calendar,
+        },
+        {
+          name: "Records",
+          href: "/patient/self",
+          access: ["patient"],
+          icon: List,
+        },
+        {
+          name: "Prescription",
+          href: "#",
+          access: ["patient", "pharmacist"],
+          icon: Pill,
+        },
+        {
+          name: "Billing",
+          href: "/patient/self?cat=payments",
+          access: ["patient", "cashier", "receptionist"],
+          icon: Receipt,
+        },
       ],
     },
     {
       label: "System",
       links: [
-        { name: "Notifications", href: "/notifications", access: ACCESS_LEVELS_ALL, icon: Bell },
-        { name: "Audit Logs", href: "/admin/audit-logs", access: ["admin"], icon: Logs },
-        { name: "Settings", href: "/admin/system-settings", access: ["admin"], icon: Settings },
+        {
+          name: "Notifications",
+          href: "/notifications",
+          access: ACCESS_LEVELS_ALL,
+          icon: Bell,
+        },
+        {
+          name: "Audit Logs",
+          href: "/admin/audit-logs",
+          access: ["admin"],
+          icon: Logs,
+        },
+        {
+          name: "Settings",
+          href: "/admin/system-settings",
+          access: ["admin"],
+          icon: Settings,
+        },
       ],
     },
   ];
@@ -100,11 +285,16 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
     const basePath = href.split("?")[0];
 
     if (role === "patient" && href.includes("?id=")) {
-      const idParam = new URLSearchParams(pathname.split("?")[1] || "").get("id");
+      const idParam = new URLSearchParams(pathname.split("?")[1] || "").get(
+        "id"
+      );
       return idParam === userId;
     }
 
-    if (basePath === "/record/appointments" && pathname.startsWith("/record/appointments")) {
+    if (
+      basePath === "/record/appointments" &&
+      pathname.startsWith("/record/appointments")
+    ) {
       return role !== "patient" && !href.includes("?id=");
     }
 
@@ -112,14 +302,17 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
   };
 
   return (
-    <div className="w-full p-4 flex flex-col justify-between gap-4 bg-white overflow-y-scroll min-h-full">
+    <div className="w-full p-4 flex flex-col justify-between gap-4 bg-card text-card-foreground overflow-y-auto min-h-full">
       <div>
         {/* Logo / Branding */}
         <div className="flex items-center justify-center lg:justify-start gap-2">
-          <div className="p-1.5 rounded-md bg-blue-600 text-white">
+          <div className="p-1.5 rounded-md bg-primary text-primary-foreground">
             <SquareActivity size={22} />
           </div>
-          <Link href={"/"} className="hidden lg:flex text-base 2xl:text-xl font-bold">
+          <Link
+            href={"/"}
+            className="hidden lg:flex text-base 2xl:text-xl font-bold"
+          >
             ClincX
           </Link>
         </div>
@@ -128,7 +321,7 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
         <div className="mt-4 text-sm">
           {SIDEBAR_LINKS.map((section) => (
             <div key={section.label} className="flex flex-col gap-2">
-              <span className="hidden uppercase lg:block text-gray-400 font-bold my-4">
+              <span className="hidden uppercase lg:block text-muted-foreground font-bold my-4">
                 {section.label}
               </span>
               {section.links.map((link) =>
@@ -136,10 +329,10 @@ export const Sidebar = ({ role, userId }: SidebarProps) => {
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`flex items-center justify-center lg:justify-start gap-4 py-2 px-2 rounded-md ${
+                    className={`flex items-center justify-center lg:justify-start gap-4 py-2 px-2 rounded-md transition-colors ${
                       isActiveLink(link.href)
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-500 hover:bg-blue-600/10"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-card-foreground hover:bg-muted hover:text-muted-foreground"
                     }`}
                   >
                     <SidebarIcon icon={link.icon} />

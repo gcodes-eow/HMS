@@ -23,46 +23,45 @@ const columns = [
 ];
 
 const DoctorsList = async (props: SearchParamsProps) => {
+  // ✅ Await the searchParams
   const searchParams = await props.searchParams;
-  const page = (searchParams?.p || "1") as string;
-  const searchQuery = (searchParams?.q || "") as string;
+  const page = searchParams?.p ?? "1";
+  const searchQuery = searchParams?.q ?? "";
 
   const { data, totalPages, totalRecords, currentPage } = await getAllDoctors({
     page,
     search: searchQuery,
   });
 
-  if (!data) return null;
+  if (!data) return <p>No doctors found</p>;
+
   const isAdmin = await checkRole("ADMIN");
 
-  const renderRow = (item: Doctor) => (
-    <tr
-      key={item?.id}
-      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50"
-    >
+  const renderRow = (item: Doctor & { index: number }) => (
+    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50">
       <td className="flex items-center gap-4 p-4">
         <ProfileImage
-          url={item?.img!}
-          name={item?.name}
-          bgColor={item?.colorCode!}
+          url={item.img ?? ""}
+          name={item.name}
+          bgColor={item.colorCode ?? "#ccc"}
           textClassName="text-black"
         />
         <div>
-          <h3 className="uppercase">{item?.name}</h3>
-          <span className="text-sm capitalize">{item?.specialization}</span>
+          <h3 className="uppercase">{item.name}</h3>
+          <span className="text-sm capitalize">{item.specialization}</span>
         </div>
       </td>
-      <td className="hidden md:table-cell">{item?.license_number}</td>
-      <td className="hidden md:table-cell">{item?.phone}</td>
-      <td className="hidden lg:table-cell">{item?.email}</td>
-      <td className="hidden xl:table-cell">
-        {format(item?.created_at, "yyyy-MM-dd")}
-      </td>
+      <td className="hidden md:table-cell">{item.license_number}</td>
+      <td className="hidden md:table-cell">{item.phone}</td>
+      <td className="hidden lg:table-cell">{item.email}</td>
+      <td className="hidden xl:table-cell">{format(item.created_at, "yyyy-MM-dd")}</td>
       <td>
         <div className="flex items-center gap-2">
-          <ViewAction href={`doctors/${item?.id}`} />
+          <ViewAction href={`doctors/${item.id}`} />
           {isAdmin && (
-            <ActionDialog type="delete" id={item?.id} deleteType="doctor" />
+            <ActionDialog type="delete" id={item.id} deleteType="doctor">
+              <button className="text-red-500">Delete</button>
+            </ActionDialog>
           )}
         </div>
       </td>
@@ -75,17 +74,19 @@ const DoctorsList = async (props: SearchParamsProps) => {
         <div className="hidden lg:flex items-center gap-1">
           <Users size={20} className="text-gray-500" />
           <p className="text-2xl font-semibold">{totalRecords ?? 0}</p>
-          <span className="text-gray-600 text-sm xl:text-base">
-            total doctors
-          </span>
+          <span className="text-gray-600 text-sm xl:text-base">total doctors</span>
         </div>
 
-        {/* ✅ Use Toolbar */}
+        {/* Toolbar with search and + Add Doctor */}
         <DoctorsToolbar isAdmin={isAdmin} />
       </div>
 
       <div className="mt-4">
-        <Table columns={columns} data={data} renderRow={renderRow} />
+        <Table
+          columns={columns}
+          data={data}
+          renderRow={renderRow}
+        />
 
         {totalPages && (
           <Pagination

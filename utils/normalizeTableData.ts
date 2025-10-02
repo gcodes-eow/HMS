@@ -12,7 +12,7 @@ export function normalizeStaffData(staff: Staff[]): TableStaff[] {
     index,
     phone: s.phone ?? "",
     img: s.img ?? "",
-    colorCode: s.colorCode ?? "#ccc",
+    color_code: s.color_code ?? "#ccc",
     created_at: s.created_at ? new Date(s.created_at) : new Date(),
   }));
 }
@@ -33,7 +33,7 @@ export function normalizeMedicalRecordsData(records: any[]): TableMedicalRecord[
       patient: {
         ...r.patient,
         img: r.patient?.img ?? "",
-        colorCode: r.patient?.colorCode ?? "#ccc",
+        color_code: r.patient?.color_code ?? "#ccc",
       },
       diagnosis: r.diagnosis ?? [],
       lab_test: r.lab_test ?? [],

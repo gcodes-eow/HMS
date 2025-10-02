@@ -12,35 +12,22 @@ import {
 import { Button } from "./ui/Button";
 import { toast } from "sonner";
 import { deleteDataById } from "@/app/actions/general";
-import { Loader2 } from "lucide-react"; // ✅ Spinner
+import { Loader2 } from "lucide-react";
 
-// Only include types that match deleteDataById
 export type DeleteType =
-  | "doctor"
-  | "staff"
-  | "patient"
-  | "payment"
-  | "bill"
-  | "inventory"
-  | "service"
-  | "appointment"
-  | "medicalRecord"
-  | "labTest";
+  | "doctor" | "staff" | "patient" | "payment"
+  | "bill" | "inventory" | "service" | "appointment"
+  | "medicalRecord" | "labTest" | "medication";
 
 interface ActionDialogProps {
-  type: "delete"; // currently only using delete for now
+  type: "delete";
   id: string;
   deleteType: DeleteType;
-  onDeleted?: () => void; // optional callback to refresh parent
+  onDeleted?: () => void;
   children: ReactNode;
 }
 
-export const ActionDialog = ({
-  id,
-  deleteType,
-  onDeleted,
-  children,
-}: ActionDialogProps) => {
+export const ActionDialog = ({ id, deleteType, onDeleted, children }: ActionDialogProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
@@ -50,11 +37,7 @@ export const ActionDialog = ({
       if (res.success) {
         toast.success(res.message || "Deleted successfully");
         onDeleted?.();
-
-        // ✅ Close dialog after success
-        const closeBtn = document.querySelector<HTMLButtonElement>(
-          "[data-dialog-close]"
-        );
+        const closeBtn = document.querySelector<HTMLButtonElement>("[data-dialog-close]");
         closeBtn?.click();
       } else {
         toast.error(res.message || "Failed to delete");
@@ -70,12 +53,13 @@ export const ActionDialog = ({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="bg-card dark:bg-card-dark text-foreground dark:text-foreground-dark">
         <div className="flex flex-col items-center justify-center py-6">
           <DialogTitle>Delete Confirmation</DialogTitle>
-          <p>Are you sure you want to delete this record?</p>
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground-dark">
+            Are you sure you want to delete this record?
+          </p>
           <div className="flex gap-2 mt-4">
-            {/* Cancel now has data-dialog-close */}
             <DialogClose asChild>
               <Button data-dialog-close>Cancel</Button>
             </DialogClose>

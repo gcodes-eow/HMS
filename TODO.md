@@ -213,13 +213,14 @@ hospital/
 <!-- TO-DO LIST -->
 1. Complete billing and payment systems.
 2. Build notification and messaging system according to roles.
-3. Build apply for leave system and avail it to all staff via dashboards.
+3. Trade Duties, Apply for Leave, Upcoming Events.
 4. Make sure all links direct to the right pages without braking.
 5. Create Electronic Health Records (EHR) system.
 6. Decision Support Systems (DSS).
 7. Telemedicine system.
 8. Mobile and Cloud Access.
 9. link medication administration to inventory items
+10. 
 
 
 <!-- Committing Changes to GitHub Repository -->
@@ -255,3 +256,176 @@ git rm -r --cached .next
 git commit -m "Remove ignored files from repository"
 
 git push origin main
+
+I have finished add new models to schema.prisma, zod schemas, and seed.ts. I have also finished adding all the files in the file structure below. Let's now create the files in the structure below one-by-one until everything is tied together and functional.
+
+hospital/
+├── app/
+│   ├── (protected)/
+│   │   ├── duty-rosters/
+│   │   │   ├── page.tsx                    # Duty roster calendar view
+│   │   │   ├── [id]/page.tsx               # Individual roster details
+│   │   │   ├── assign/page.tsx             # Manual roster assignment
+│   │   │   ├── swap/page.tsx               # Shift swap requests
+│   │   │
+│   │   ├── leave/
+│   │   │   ├── page.tsx                    # Leave request form
+│   │   │   ├── history/page.tsx            # Staff leave history
+│   │   │   ├── approvals/page.tsx          # Manager approval dashboard
+│   │   │
+│   │   ├── events/
+│   │   │   ├── page.tsx                    # Events & announcements board
+│   │   │   ├── calendar/page.tsx           # Event calendar
+│   │   │   ├── [id]/page.tsx               # Single event/announcement details
+│   │   │   ├── create/page.tsx             # Admin create event form
+│   │   │
+│   ├── actions/
+│   │   ├── dutyRosters.ts                  # Server actions for rosters
+│   │   ├── leave.ts                        # Server actions for leave
+│   │   ├── events.ts                       # Server actions for events
+│
+├── components/
+│   ├── dutyRosters/
+│   │   ├── DutyRosterCalendar.tsx          # Calendar view
+│   │   ├── DutyRosterTable.tsx             # Tabular roster view
+│   │   ├── AssignRosterForm.tsx            # Assign shifts manually
+│   │   ├── ShiftSwapForm.tsx               # Request/approve swaps
+│   │   ├── RosterFilters.tsx               # Department/role filters
+│   │
+│   ├── leave/
+│   │   ├── LeaveRequestForm.tsx            # Staff leave application form
+│   │   ├── LeaveApprovalTable.tsx          # Approvals dashboard
+│   │   ├── LeaveHistoryTable.tsx           # Staff leave records
+│   │   ├── LeaveBalanceCard.tsx            # Remaining quota tracker
+│   │
+│   ├── events/
+│   │   ├── EventCard.tsx                   # Compact event/announcement card
+│   │   ├── EventDetails.tsx                # Detailed event page
+│   │   ├── EventCalendar.tsx               # Interactive calendar
+│   │   ├── AnnouncementBoard.tsx           # List of announcements
+│   │   ├── RSVPButton.tsx                  # RSVP action component
+│   │
+│   ├── tables/
+│   │   ├── RosterTable.tsx                 # Generic roster data table
+│   │   ├── LeaveTable.tsx                  # Generic leave request table
+│   │   ├── EventsTable.tsx                 # Generic events listing table
+│
+├── utils/
+│   ├── services/
+│   │   ├── dutyRosters.ts                  # Business logic for scheduling
+│   │   ├── leave.ts                        # Business logic for leave mgmt
+│   │   ├── events.ts                       # Business logic for events
+│
+├── types/
+│   ├── dutyRosters.ts                      # Type definitions for shifts/rosters
+│   ├── leave.ts                            # Type definitions for leave
+│   ├── events.ts                           # Type definitions for events
+
+---
+🧑‍⚕ 1. Duty Rosters Module
+
+🔧 How It Works:
+- Assigns shifts to medical and support staff based on roles, departments, and availability.
+- Supports recurring schedules, emergency overrides, and shift swaps.
+- Displays rosters in calendar or tabular format for easy viewing.
+
+🛠 Work Plan:
+1. Requirement Gathering
+   - Define roles (doctors, nurses, lab techs, etc.)
+   - Determine shift types (day/night, on-call, etc.)
+   - Identify scheduling rules (max hours, rest periods)
+
+2. Database Design
+   - Tables: Staff, Shifts, Roster, Departments
+   - Relationships: Staff ↔ Roster ↔ Shifts
+
+3. Backend Logic
+   - Auto-scheduling algorithm (optional)
+   - Manual assignment interface
+   - Conflict detection (overlapping shifts)
+
+4. Frontend Interface
+   - Calendar view (weekly/monthly)
+   - Filters by department, role, or staff
+   - Export/print options
+
+5. Testing
+   - Validate shift assignments
+   - Check for edge cases (leave conflicts, holidays)
+
+---
+
+📝 2. Apply for Leave Module
+
+🔧 How It Works:
+- Staff submit leave requests with dates and reasons.
+- Managers approve/reject based on availability and policy.
+- Approved leave updates the duty roster automatically.
+
+🛠 Work Plan:
+1. Requirement Gathering
+   - Leave types (annual, sick, emergency)
+   - Approval hierarchy (supervisor, HR)
+   - Leave policies (limits, blackout dates)
+
+2. Database Design
+   - Tables: LeaveRequests, LeaveTypes, Staff, Approvals
+   - Status tracking: pending, approved, rejected
+
+3. Backend Logic
+   - Leave validation (quota, overlapping)
+   - Notification system (email/SMS/in-app)
+   - Integration with duty roster
+
+4. Frontend Interface
+   - Leave request form
+   - Dashboard for approvals
+   - Leave history and balance tracker
+
+5. Testing
+   - Submit and approve leave
+   - Ensure roster updates correctly
+   - Test policy enforcement
+
+---
+
+📢 3. Events & Announcements Module
+
+🔧 How It Works:
+- Admins post hospital-wide or department-specific updates.
+- Includes meetings, training, celebrations, and alerts.
+- Staff receive notifications and can RSVP if needed.
+
+🛠 Work Plan:
+1. Requirement Gathering
+   - Event types (mandatory, optional)
+   - Audience targeting (all staff, specific roles)
+   - Notification preferences
+
+2. Database Design
+   - Tables: Events, Announcements, Staff, RSVPs
+   - Fields: title, description, date/time, location, visibility
+
+3. Backend Logic
+   - Scheduling and reminders
+   - RSVP tracking
+   - Expiry and archive system
+
+4. Frontend Interface
+   - Announcement board
+   - Event calendar
+   - RSVP buttons and attendance logs
+
+5. Testing
+   - Post and view announcements
+   - RSVP and attendance tracking
+   - Notification delivery
+
+---
+
+🧩 Integration Strategy
+
+- User Roles & Permissions: Ensure modules respect access levels (e.g., only HR can approve leave).
+- Unified Dashboard: Combine all modules into a central dashboard for staff and admins.
+- Mobile Compatibility: Make sure interfaces work on mobile for on-the-go access.
+- Audit Logs: Track changes for compliance and accountability.

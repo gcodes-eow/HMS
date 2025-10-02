@@ -9,18 +9,9 @@ import { redirect } from "next/navigation";
 import { Prisma, InventoryCategory } from "@prisma/client";
 import { checkRole } from "@/utils/roles";
 
-interface Props {
-  searchParams: {
-    p?: string;
-    search?: string;
-    category?: string;
-    sort?: string;
-  };
-}
-
 const limit = 10;
 
-const InventoryPage = async ({ searchParams }: Props) => {
+const InventoryPage = async ({ searchParams }: any) => {
   const page = parseInt(searchParams.p || "1", 10);
   if (isNaN(page) || page < 1) redirect("/record/inventory?p=1");
   const offset = (page - 1) * limit;
@@ -101,7 +92,7 @@ const InventoryPage = async ({ searchParams }: Props) => {
 
       <InventoryListTable
         initialData={items}
-        isAdmin={isAdmin ?? false} // ensure boolean
+        isAdmin={isAdmin ?? false}
         search={query}
         category={categoryFilter}
       />

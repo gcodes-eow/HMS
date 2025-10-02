@@ -1,4 +1,3 @@
-// components/CustomInput.tsx
 import React, { useState } from "react";
 import { Control } from "react-hook-form";
 import {
@@ -31,7 +30,6 @@ interface InputProps {
   inputType?: "text" | "email" | "password" | "date" | "number";
   selectList?: { label: string; value: string }[];
   defaultValue?: string;
-  // For switch work schedule
   data?: { label: string; value: string }[];
   setWorkSchedule?: React.Dispatch<React.SetStateAction<Day[]>>;
 }
@@ -50,6 +48,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
           <Input
             type={props.inputType}
             placeholder={props.placeholder}
+            className="bg-input text-foreground"
             {...field}
           />
         </FormControl>
@@ -59,11 +58,11 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
       return (
         <Select onValueChange={field.onChange} value={field?.value}>
           <FormControl>
-            <SelectTrigger>
+            <SelectTrigger className="bg-input text-foreground">
               <SelectValue placeholder={props.placeholder} />
             </SelectTrigger>
           </FormControl>
-          <SelectContent>
+          <SelectContent className="bg-card text-card-foreground">
             {props.selectList?.map((i, id) => (
               <SelectItem key={id} value={i.value}>
                 {i.label}
@@ -75,7 +74,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
 
     case "checkbox":
       return (
-        <div className="items-top flex space-x-2">
+        <div className="flex items-start space-x-2">
           <Checkbox
             id={props.name}
             onCheckedChange={(checked) =>
@@ -85,7 +84,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
           <div className="grid gap-1.5 leading-none">
             <label
               htmlFor={props.name}
-              className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="cursor-pointer text-sm font-medium text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               {props.label}
             </label>
@@ -99,7 +98,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
     case "radio":
       return (
         <div className="w-full">
-          <FormLabel>{props.label}</FormLabel>
+          <FormLabel className="text-foreground">{props.label}</FormLabel>
           <RadioGroup
             defaultValue={props.defaultValue}
             onChange={field.onChange}
@@ -114,7 +113,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
                 />
                 <Label
                   htmlFor={i.value}
-                  className="flex flex-1 items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-blue-500 peer-data-[state=checked]:text-blue-600"
+                  className="flex flex-1 items-center justify-center rounded-md border-2 border-border bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary-foreground text-foreground"
                 >
                   {i.label}
                 </Label>
@@ -127,7 +126,11 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
     case "textarea":
       return (
         <FormControl>
-          <Textarea placeholder={props.placeholder} {...field} />
+          <Textarea
+            placeholder={props.placeholder}
+            className="bg-input text-foreground"
+            {...field}
+          />
         </FormControl>
       );
 
@@ -137,13 +140,11 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
       const handleToggle = (day: string, checked: boolean) => {
         props.setWorkSchedule?.((prevDays) => {
           if (checked) {
-            // Add default working hours
             return [
               ...prevDays.filter((d) => d.day !== day),
               { day, start_time: "09:00", close_time: "17:00" },
             ];
           } else {
-            // Remove day from schedule
             return prevDays.filter((d) => d.day !== day);
           }
         });
@@ -169,7 +170,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
             return (
               <div
                 key={id}
-                className="flex flex-col gap-2 border-t border-gray-200 pt-3"
+                className="flex flex-col gap-2 border-t border-border pt-3"
               >
                 <div className="flex items-center gap-3">
                   <Switch
@@ -180,13 +181,13 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
                       handleToggle(el.value, checked);
                     }}
                   />
-                  <Label htmlFor={el.value} className="capitalize">
+                  <Label htmlFor={el.value} className="capitalize text-foreground">
                     {el.label}
                   </Label>
                 </div>
 
                 {!enabled ? (
-                  <p className="text-gray-400 text-sm italic pl-10">
+                  <p className="text-muted-foreground text-sm italic pl-10">
                     Not working on this day
                   </p>
                 ) : (
@@ -194,6 +195,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
                     <Input
                       type="time"
                       defaultValue="09:00"
+                      className="bg-input text-foreground"
                       onChange={(e) =>
                         handleTimeChange(el.value, "start_time", e.target.value)
                       }
@@ -201,6 +203,7 @@ const RenderInput = ({ field, props }: { field: any; props: InputProps }) => {
                     <Input
                       type="time"
                       defaultValue="17:00"
+                      className="bg-input text-foreground"
                       onChange={(e) =>
                         handleTimeChange(el.value, "close_time", e.target.value)
                       }
@@ -228,10 +231,10 @@ export const CustomInput = (props: InputProps) => {
       render={({ field }) => (
         <FormItem className="w-full">
           {type !== "radio" && type !== "checkbox" && type !== "switch" && (
-            <FormLabel>{label}</FormLabel>
+            <FormLabel className="text-foreground">{label}</FormLabel>
           )}
           <RenderInput field={field} props={props} />
-          <FormMessage />
+          <FormMessage className="text-muted-foreground" />
         </FormItem>
       )}
     />

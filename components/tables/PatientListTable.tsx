@@ -19,7 +19,7 @@ type Patient = {
 
 interface Props {
   data: Patient[];
-  onDeleted?: () => void; // callback for refreshing after delete
+  onDeleted?: () => void;
 }
 
 const columns = [
@@ -36,7 +36,7 @@ export const PatientListTable = ({ data, onDeleted }: Props) => {
     return (
       <tr
         key={patient.id}
-        className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50"
+        className="border-b border-border even:bg-muted hover:bg-accent dark:border-border-dark dark:even:bg-muted-dark dark:hover:bg-accent-dark text-sm"
       >
         <td className="flex items-center gap-2 py-2 font-medium">
           <ProfileImage
@@ -48,31 +48,24 @@ export const PatientListTable = ({ data, onDeleted }: Props) => {
           {name}
         </td>
         <td className="py-2">{patient.phone}</td>
-        <td className="hidden md:table-cell py-2">
-          {patient.email || "-"}
-        </td>
+        <td className="hidden md:table-cell py-2">{patient.email || "-"}</td>
         <td className="py-2">
           <div className="flex gap-2">
-            {/* View */}
             <Link href={`/record/patients/${patient.id}`}>
               <button className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600">
                 <Eye size={16} />
               </button>
             </Link>
-
-            {/* Edit */}
             <Link href={`/patient/registration?edit=${patient.id}`}>
               <button className="w-7 h-7 flex items-center justify-center rounded-full bg-yellow-500 text-white hover:bg-yellow-600">
                 <Pencil size={16} />
               </button>
             </Link>
-
-            {/* Delete */}
             <ActionDialog
               type="delete"
               id={String(patient.id)}
               deleteType="patient"
-              onDeleted={onDeleted} // refresh after delete
+              onDeleted={onDeleted}
             >
               <button className="w-7 h-7 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600">
                 <Trash2 size={16} />
@@ -85,7 +78,7 @@ export const PatientListTable = ({ data, onDeleted }: Props) => {
   };
 
   return (
-    <div className="mt-4 bg-white rounded-xl p-4">
+    <div className="mt-4 bg-card rounded-xl p-4 dark:bg-card-dark">
       <Table columns={columns} data={data} renderRow={renderRow} />
     </div>
   );

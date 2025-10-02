@@ -1,79 +1,15 @@
 // utils/services/appointment.ts
 import db from "@/lib/db";
-import { AppointmentStatus as PrismaAppointmentStatus } from "@prisma/client";
-
-// ---------------------------
-// Service Response Type
-// ---------------------------
-export interface ServiceResponse<T> {
-  success: boolean;
-  error: boolean;
-  status: number;
-  message?: string;
-  data?: T;
-  totalPages?: number;
-  currentPage?: number;
-  totalRecords?: number;
-}
-
-// ---------------------------
-// Input for fetching
-// ---------------------------
-interface AllAppointmentsProps {
-  page: number | string;
-  limit?: number | string;
-  search?: string;
-  id?: string;
-  status?: AppointmentStatus;
-  sort?: "newest" | "oldest";
-}
-
-// ---------------------------
-// Build query dynamically
-// ---------------------------
-const buildQuery = (id?: string, search?: string, status?: AppointmentStatus) => {
-  const conditions: any[] = [];
-
-  if (search) {
-    conditions.push({
-      OR: [
-        { patient: { first_name: { contains: search, mode: "insensitive" } } },
-        { patient: { last_name: { contains: search, mode: "insensitive" } } },
-        { doctor: { name: { contains: search, mode: "insensitive" } } },
-      ],
-    });
-  }
-
-  if (id) conditions.push({ OR: [{ patient_id: id }, { doctor_id: id }] });
-  if (status) conditions.push({ status });
-
-  return conditions.length ? { AND: conditions } : {};
-};
+import {
+  AppointmentStatus as PrismaAppointmentStatus,
+  Patient as PrismaPatient,
+  Doctor as PrismaDoctor,
+} from "@prisma/client";
 
 // ---------------------------
 // Types
 // ---------------------------
 export type AppointmentStatus = PrismaAppointmentStatus;
-
-export interface Patient {
-  id: string;
-  first_name: string;
-  last_name: string;
-  gender: string;
-  img?: string | null;
-  colorCode?: string | null;
-  date_of_birth?: Date;
-  phone?: string;
-  address?: string;
-}
-
-export interface Doctor {
-  id: string;
-  name: string;
-  specialization: string;
-  img?: string | null;
-  colorCode?: string | null;
-}
 
 export interface Appointment {
   id: number;
@@ -90,14 +26,54 @@ export interface Appointment {
 }
 
 export type AppointmentWithRelations = Appointment & {
-  patient: Patient;
-  doctor: Doctor;
+  patient: PrismaPatient & { img?: string | null; colorCode?: string | null };
+  doctor: PrismaDoctor & { img?: string | null; colorCode?: string | null; department?: string | null };
   hasConflict?: boolean;
   doctorConflict?: boolean;
 };
 
+export interface ServiceResponse<T> {
+  success: boolean;
+  error: boolean;
+  status: number;
+  message?: string;
+  data?: T;
+  totalPages?: number;
+  currentPage?: number;
+  totalRecords?: number;
+  limit?: number;
+}
+
+interface AllAppointmentsProps {
+  page: number | string;
+  limit?: number | string;
+  search?: string;
+  id?: string;
+  status?: AppointmentStatus;
+  sort?: "newest" | "oldest";
+}
+
 // ---------------------------
-// Get all appointments
+// Build query dynamically
+// ---------------------------
+const buildQuery = (id?: string, search?: string, status?: AppointmentStatus) => {
+  const conditions: any[] = [];
+  if (search) {
+    conditions.push({
+      OR: [
+        { patient: { first_name: { contains: search, mode: "insensitive" } } },
+        { patient: { last_name: { contains: search, mode: "insensitive" } } },
+        { doctor: { name: { contains: search, mode: "insensitive" } } },
+      ],
+    });
+  }
+  if (id) conditions.push({ OR: [{ patient_id: id }, { doctor_id: id }] });
+  if (status) conditions.push({ status });
+  return conditions.length ? { AND: conditions } : {};
+};
+
+// ---------------------------
+// Get patient appointments
 // ---------------------------
 export async function getPatientAppointments({
   page,
@@ -134,7 +110,6 @@ export async function getPatientAppointments({
             status: { not: "CANCELLED" },
           },
         });
-
         const overlappingDoctor = await db.appointment.findFirst({
           where: {
             doctor_id: appt.doctor_id,
@@ -144,9 +119,15 @@ export async function getPatientAppointments({
             status: { not: "CANCELLED" },
           },
         });
-
         return {
           ...appt,
+          patient: { ...appt.patient, img: appt.patient.img ?? null, colorCode: appt.patient.color_code ?? null },
+          doctor: {
+            ...appt.doctor,
+            img: appt.doctor.img ?? null,
+            colorCode: appt.doctor.color_code ?? null,
+            department: appt.doctor.department ?? null,
+          },
           hasConflict: !!overlappingPatient,
           doctorConflict: !!overlappingDoctor,
         };
@@ -156,15 +137,21 @@ export async function getPatientAppointments({
     return {
       success: true,
       error: false,
+      status: 200,
       data: appointmentsWithConflict,
       totalPages: Math.ceil(totalRecords / LIMIT),
       currentPage: PAGE_NUMBER,
       totalRecords,
-      status: 200,
+      limit: LIMIT,
     };
   } catch (error) {
-    console.error(error);
-    return { success: false, error: true, message: "Internal Server Error", status: 500 };
+    console.error("getPatientAppointments error:", error);
+    return {
+      success: false,
+      error: true,
+      message: "Internal Server Error",
+      status: 500,
+    };
   }
 }
 
@@ -175,36 +162,31 @@ export async function getAppointmentById(
   id: number
 ): Promise<ServiceResponse<AppointmentWithRelations>> {
   try {
-    if (!id) return { success: false, error: true, message: "Appointment ID required", status: 400 };
-
+    if (!id) {
+      return { success: false, error: true, message: "Appointment ID required", status: 400 };
+    }
     const data = await db.appointment.findUnique({
       where: { id },
       include: { patient: true, doctor: true },
     });
-
-    if (!data) return { success: false, error: true, message: "Appointment not found", status: 404 };
-
-    const appointment: AppointmentWithRelations = {
-      id: data.id,
-      patient_id: data.patient_id,
-      doctor_id: data.doctor_id,
-      appointment_date: data.appointment_date,
-      time: data.time,
-      status: data.status,
-      type: data.type,
-      reason: data.reason,
-      note: data.note,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      patient: {
-        ...data.patient,
-        phone: data.patient?.phone,
-        address: data.patient?.address,
+    if (!data) {
+      return { success: false, error: true, message: "Appointment not found", status: 404 };
+    }
+    return {
+      success: true,
+      error: false,
+      status: 200,
+      data: {
+        ...data,
+        patient: { ...data.patient, img: data.patient.img ?? null, colorCode: data.patient.color_code ?? null },
+        doctor: {
+          ...data.doctor,
+          img: data.doctor.img ?? null,
+          colorCode: data.doctor.color_code ?? null,
+          department: data.doctor.department ?? null,
+        },
       },
-      doctor: data.doctor,
     };
-
-    return { success: true, error: false, data: appointment, status: 200 };
   } catch (error) {
     console.error("getAppointmentById error:", error);
     return { success: false, error: true, message: "Internal Server Error", status: 500 };

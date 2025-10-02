@@ -4,7 +4,7 @@ import { ActionOptions, ViewAction } from "@/components/ActionOptions";
 import { StaffForm } from "@/components/forms/StaffForm";
 import { Pagination } from "@/components/Pagination";
 import { ProfileImage } from "@/components/ProfileImage";
-import SearchInput from "@/components/appointment/SearchInput";
+import SearchInput from "@/components/SearchInput";
 import { Table } from "@/components/tables/Table";
 import { Button } from "@/components/ui/Button";
 import { SearchParamsProps } from "@/types";
@@ -46,7 +46,7 @@ const StaffList = async (props: SearchParamsProps) => {
         <ProfileImage
           url={item.img}
           name={item.name}
-          bgColor={item.colorCode}
+          bgColor={item.color_code}
           textClassName="text-black"
         />
         <div>

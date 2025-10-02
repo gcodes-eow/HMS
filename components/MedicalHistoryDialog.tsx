@@ -1,4 +1,3 @@
-// components/medical-history-dialog.tsx
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import React from "react";
@@ -10,6 +9,7 @@ interface DataProps {
   doctor_id: string | number;
   label: React.ReactNode;
 }
+
 export const MedicalHistoryDialog = async ({
   id,
   patientId,
@@ -21,18 +21,13 @@ export const MedicalHistoryDialog = async ({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="flex items-center justify-center rounded-full bg-blue-600/10 hover:underline text-blue-600 px-1.5 py-1 text-xs md:text-sm"
+          className="flex items-center justify-center rounded-full bg-primary/10 text-primary hover:underline px-1.5 py-1 text-xs md:text-sm"
         >
           {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90%] max-w-[425px] md:max-w-2xl 2xl:max-w-4xl p-8 overflow-y-auto">
-        {/* <DiagnosisContainer
-          id={id}
-          patientId={patientId!}
-          doctor_id={doctor_id!}
-        /> */}
-
+      <DialogContent className="max-h-[90%] max-w-[425px] md:max-w-2xl 2xl:max-w-4xl p-8 overflow-y-auto bg-card text-card-foreground">
+        {/* Replace with DiagnosisContainer when ready */}
         <p>Diagnosis container form</p>
       </DialogContent>
     </Dialog>
